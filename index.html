@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OpenQual — The open qualification data standard for first responders</title>
+  <meta name="description" content="OpenQual is an open data standard of schemas, data models, and calculation tools that define how qualification data is structured and exchanged for first responders, their agencies, and the equipment they depend on.">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <style>
+    /* Reset & base */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #2c3038;
+      --bg-subtle: #343841;
+      --text: #d5d7db;
+      --text-muted: #9a9da3;
+      --accent: #d4a020;
+      --accent-hover: #e0b340;
+      --olive: #7a7a42;
+    }
+
+    html {
+      font-size: 18px;
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* Layout */
+    .container {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+    }
+
+    section {
+      padding: 4rem 0;
+    }
+
+    /* Header / Hero */
+    .hero {
+      padding: 6rem 0 4rem;
+      border-bottom: 1px solid var(--bg-subtle);
+    }
+
+    .hero-logo {
+      width: 80px;
+      height: 80px;
+      margin-bottom: 2rem;
+    }
+
+    .hero h1 {
+      font-size: 2.4rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: #fff;
+      margin-bottom: 1rem;
+      line-height: 1.15;
+    }
+
+    .hero .tagline {
+      font-size: 1.15rem;
+      color: var(--text-muted);
+      line-height: 1.65;
+      max-width: 580px;
+    }
+
+    /* Section headings */
+    h2 {
+      font-size: 1.35rem;
+      font-weight: 600;
+      color: var(--accent);
+      margin-bottom: 1.25rem;
+      letter-spacing: -0.01em;
+    }
+
+    /* Body copy */
+    p {
+      margin-bottom: 1.25rem;
+      color: var(--text);
+    }
+
+    p:last-child {
+      margin-bottom: 0;
+    }
+
+    /* Sections */
+    .section-border {
+      border-bottom: 1px solid var(--bg-subtle);
+    }
+
+    /* Kicker */
+    .kicker {
+      padding: 3rem 0;
+      border-bottom: 1px solid var(--bg-subtle);
+    }
+
+    .kicker p {
+      font-size: 1.1rem;
+      font-style: italic;
+      color: var(--text-muted);
+    }
+
+    /* Get Involved */
+    .get-involved {
+      padding: 4rem 0;
+      border-bottom: 1px solid var(--bg-subtle);
+    }
+
+    .get-involved-links {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-top: 1.5rem;
+    }
+
+    .get-involved-links a {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 1rem;
+      transition: color 0.15s;
+    }
+
+    .get-involved-links a:hover {
+      color: var(--accent-hover);
+    }
+
+    .get-involved-links a svg {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+
+    /* Footer */
+    footer {
+      padding: 2.5rem 0;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+
+    footer a {
+      color: var(--text-muted);
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.15s, color 0.15s;
+    }
+
+    footer a:hover {
+      color: var(--text);
+      border-bottom-color: var(--text-muted);
+    }
+
+    footer .footer-inner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      html { font-size: 16px; }
+      .hero { padding: 4rem 0 3rem; }
+      .hero h1 { font-size: 2rem; }
+      section { padding: 3rem 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Hero -->
+  <header class="hero">
+    <div class="container">
+      <img src="logo.png" alt="OpenQual logo" class="hero-logo">
+      <h1>OpenQual</h1>
+      <p class="tagline">The open qualification data standard for first responders, their agencies, and the equipment they depend on.</p>
+    </div>
+  </header>
+
+  <!-- The Problem -->
+  <section class="section-border">
+    <div class="container">
+      <h2>The problem</h2>
+      <p>Qualification data in emergency services is fragmented. A responder's career spans jobs in the fire service, gigs in private ambulances, and volunteering on ski patrols, wildfire mitigation ops, and SAR missions. A paramedic's certifications live duplicated across incompatible digital records systems, while their fire taskbook completions live on paper. Agency training records and apparatus maintenance logs live somewhere else entirely.</p>
+      <p>None of this data travels with the responder when they move between departments or disciplines, because that data lives in unbreakable silos, and none of it belongs to the responder who earned it.</p>
+      <p>There's no common language for what a certification record looks like, what a completed taskbook is, or how readiness is calculated, whether you're qualifying a firefighter to go interior, an EMT to get an IV, an engine to roll first out, or a department to pass ISO.</p>
+    </div>
+  </section>
+
+  <!-- What OpenQual Is -->
+  <section class="section-border">
+    <div class="container">
+      <h2>What OpenQual is</h2>
+      <p>OpenQual is an open data standard of schemas, data models, and calculation tools that define how qualification data is structured and exchanged. It covers the full picture: individual credentials and certifications, structured taskbooks and skillsheets, equipment readiness records, and agency-level qualification tracking.</p>
+      <p>The standard is free, open, and owned by no single vendor. Any department can adopt it. Any developer can build on it. Any system can implement it.</p>
+    </div>
+  </section>
+
+  <!-- What OpenQual Isn't -->
+  <section class="section-border">
+    <div class="container">
+      <h2>What OpenQual isn't</h2>
+      <p>OpenQual is not an application. It's the foundation applications are built on. It defines the language, not the system.</p>
+    </div>
+  </section>
+
+  <!-- Kicker -->
+  <div class="kicker">
+    <div class="container">
+      <p>Built by those who do the work and those who want to make our work a little easier.</p>
+    </div>
+  </div>
+
+  <!-- Get Involved -->
+  <section class="get-involved">
+    <div class="container">
+      <h2>Get Involved</h2>
+      <div class="get-involved-links">
+        <a href="https://github.com/openqual" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+          GitHub
+        </a>
+        <a href="mailto:hello@openqual.org">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 4L12 13 2 4"/></svg>
+          hello@openqual.org
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <div class="footer-inner">
+        <span>Apache 2.0 License</span>
+        <a href="https://github.com/openqual/openqual.github.io" target="_blank" rel="noopener">Source on GitHub</a>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>
