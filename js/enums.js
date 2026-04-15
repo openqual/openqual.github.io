@@ -51,6 +51,18 @@ const TaskTypes = Object.freeze({
   CERT: 'cert',
 });
 
+// Shape of an evaluation task's pass/fail determination.
+const EvaluationType = Object.freeze({
+  PASS_FAIL: 'pass_fail',
+  SCORED: 'scored',
+});
+
+// How a book-level scoring threshold is applied across sections.
+const ScoringMode = Object.freeze({
+  AGGREGATED: 'aggregated',
+  PER_SECTION: 'per_section',
+});
+
 const TaskbookTypes = Object.freeze({
   TASKBOOK: 'taskbook',
   SKILLSHEET: 'skillsheet',
@@ -63,8 +75,14 @@ const RenewalStatus = Object.freeze({
   OVERDUE: 'overdue',
 });
 
-const CertificationDurationUnits = Object.freeze({
+// Unified calendar-time unit. The single standard enum for calendar-time
+// quantities (durations, reporting windows, repeat intervals). Distinct
+// from `RequirementUnits`, which measures training credit, not time.
+const TimeUnit = Object.freeze({
+  MINUTES: 'minutes',
+  HOURS: 'hours',
   DAYS: 'days',
+  WEEKS: 'weeks',
   MONTHS: 'months',
   QUARTERS: 'quarters',
   YEARS: 'years',
@@ -75,12 +93,15 @@ const RequirementUnits = Object.freeze({
   HOURS: 'hours',
 });
 
+// Authority roles a user may hold in an organization.
+//
+// These are authority roles only. Pre-membership states (e.g. pending
+// invitation, pending join request) are outside the scope of the
+// standard; a user who is not an accepted member holds no role.
 const OrgRoles = Object.freeze({
   ADMIN: 'admin',
   OFFICER: 'officer',
   MEMBER: 'member',
-  REQUESTED: 'requested',
-  INVITED: 'invited',
 });
 
 module.exports = {
@@ -88,9 +109,11 @@ module.exports = {
   EvaluationOutcome,
   SignoffPolicyType,
   TaskTypes,
+  EvaluationType,
+  ScoringMode,
   TaskbookTypes,
   RenewalStatus,
-  CertificationDurationUnits,
+  TimeUnit,
   RequirementUnits,
   OrgRoles,
 };

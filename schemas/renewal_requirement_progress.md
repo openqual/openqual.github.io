@@ -18,5 +18,5 @@ Progress on one `RenewalRequirement`.
 
 ## Notes
 
-- The source struct stores `List<DocumentReference> appliedTraining`.
-  OpenQual replaces this with `List<String> applied_training_ids`.
+- `applied_training_ids` stores opaque string IDs of the training
+  records that counted toward this requirement.

@@ -15,7 +15,7 @@
 'use strict';
 
 const { CompletionState } = require('./completion_state');
-const { WorkItemStatus, TaskTypes } = require('./enums');
+const { WorkItemStatus, TaskTypes, EvaluationType } = require('./enums');
 const { signoffsOK } = require('./signoff_policy');
 
 class SectionScoringConfig {
@@ -102,7 +102,7 @@ class TaskbookSection {
     const scoredTasks = computedTasks.filter(
       (t) =>
         t.type === TaskTypes.EVALUATION &&
-        t.typeConfig?.evaluationConfig?.criteria?.evaluationType === 'scored',
+        t.typeConfig?.evaluationConfig?.criteria?.evaluationType === EvaluationType.SCORED,
     );
 
     const pointsPossible = scoredTasks.reduce(

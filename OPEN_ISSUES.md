@@ -1,29 +1,37 @@
 # Open Issues and Observations (v0.1)
 
 Items noticed during Stage 3 extraction that are worth discussing
-before v0.2. None are blockers for v0.1 — each is captured here so
-they do not get lost.
+before v0.2. Most are notes rather than blockers; the release-blocking
+items for v0.1 are grouped at the top.
 
-## 1. Book-level status computation is not yet published
+## Release blockers for v0.1
 
-The source apps compute the taskbook-level status in the
-`recalculateTaskBookStatuses` Cloud Function, using the same waterfall
-pattern as `TaskbookSection.computeStatus` but with book-level
-thresholds and "any section failed" child-failure propagation. v0.1
-publishes the task- and section-level computations but stops short of
-packaging the book-level waterfall as a method on `Taskbook`. The
-reference implementation should be added in v0.2. The schema for
-`Taskbook.computeStatus` should be the direct analogue of
-`TaskbookSection.computeStatus` with these branches:
+The following areas must be drafted and published before v0.1 is
+released. See `schemas/README.md` → "Required for v0.1 (design in
+progress)" for the public framing.
 
-1. `hasChildFailure` → `complete_failed`
-2. `bookCannotPass` (aggregated scoring threshold) → `complete_failed`
-3. `bookFailedPoints` → `complete_failed`
-4. `isComplete && signoffOK` → `complete`
-5. `isComplete && !signoffOK` → `pending_validation`
-6. `allSectionsDone && signoffOK && !isComplete` → `owner_action_needed`
-7. any child activity or book-level signoff partial → `in_progress`
-8. default → `not_started`
+- **Top-level `Certification` class.** Holds cert name, discipline,
+  validity period, issuing-authority reference, and the relationship
+  to the certification's holder. v0.1 already publishes the renewal
+  machinery; without this class, implementations cannot portably
+  represent a person's certifications.
+- **Identity and contact primitives.** `Name`, `Address`, and related
+  person-identity shapes, sized to what the `Certification` class
+  needs to reference holders and verification contacts.
+- **Certifying-agency and cert-type modeling.** Portable
+  representations of issuing authorities and the cert-type catalogs
+  they maintain.
+
+Each is substantial on its own and the three interact. They are being
+worked through deliberately rather than rushed; each will get a
+dedicated design pass.
+
+## 1. Book-level status computation — published in v0.1
+
+Resolved. `Taskbook.computeStatus` is now part of the standard; see
+`schemas/taskbook.md` for the authoritative waterfall and
+`schemas/taskbook_summary.md` for the `TaskbookSummary` recomputation
+contract that it produces.
 
 ## 2. The source `TaskbookAttachmentStruct` is under-specified
 

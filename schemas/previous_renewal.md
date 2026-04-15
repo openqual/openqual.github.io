@@ -25,5 +25,6 @@ existed at the moment the renewal cycle closed.
 
 ## Notes
 
-- The source struct uses `List<DocumentReference>` for applied training
-  at archiving. OpenQual replaces with opaque string IDs.
+- `applied_training` stores opaque string IDs of the training records
+  that counted toward this requirement at the time of archiving.
+  Resolution is the host application's responsibility.

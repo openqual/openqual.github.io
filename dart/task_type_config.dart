@@ -47,8 +47,7 @@ class TaskTypeEvaluationConfig {
 }
 
 class TaskTypeEvaluationCriteria {
-  /// Either `"pass_fail"` or `"scored"`.
-  final String evaluationType;
+  final EvaluationType evaluationType;
   final bool autofail;
   final double? pointsPossible;
   final double? minPassingPoints;

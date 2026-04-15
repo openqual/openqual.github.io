@@ -15,16 +15,76 @@ implementation is the bug.
 
 ## Scope of v0.1
 
-v0.1 publishes two slices of types:
+OpenQual v0.1 publishes the portable class definitions and pure methods
+that a third-party developer needs to build a conformant implementation
+of the core areas of the standard. The release is intentionally focused,
+but it must be self-sufficient: a reader should be able to describe a
+person's certifications and the progress they've made on renewing them
+using v0.1 alone.
+
+### In scope for v0.1
 
 1. **TaskBook core hierarchy** — the taskbook/section/task/subtask tree,
    signoff policies, assignment, attachments, and the evaluation config
-   that drives status computation.
+   that drives book-, section-, and task-level status computation.
 2. **Certification renewal** — renewal requirements/components, progress
    tracking, and archived renewals.
+3. **Shared types and constants** — `CompletionState`,
+   `StartAndEndTimes`, and the sentinels published in
+   [constants.md](constants.md).
 
-Future versions will expand coverage (see "Not yet in the standard"
-below).
+### Required for v0.1 (design in progress)
+
+The following areas are **required before v0.1 can be released**.
+They are not yet drafted but are inside the v0.1 scope commitment.
+Each is substantial enough to warrant its own modeling pass, and
+several interact, so they are being worked through deliberately
+rather than rushed.
+
+- **Top-level `Certification` class.** v0.1 already publishes
+  everything needed to track progress against a certification's
+  renewal, but the cert itself — its name, discipline, validity
+  period, issuing authority reference, and relationship to its
+  holder — must also be modeled before release. Without this, a
+  conformant implementation cannot represent "a person's
+  certifications" using v0.1 alone.
+- **Identity and contact primitives.** `Name` and `Address` (and
+  related person-identity shapes) are required so that the
+  `Certification` class can reference who holds a certification and
+  where correspondence or verification contacts live. How the
+  standard relates qualifications to identity is being resolved
+  together with the Certification and authority work.
+- **Certifying agency and cert-type modeling.** The standard needs a
+  portable representation of the authorities that issue
+  certifications and of the cert-type catalogs those authorities
+  maintain. This is the third leg of the Certification / identity /
+  authority triangle and will be designed alongside the other two.
+
+### Out of scope (app concerns, not standard concerns)
+
+The following are intentionally excluded from the standard. They
+represent how a specific application chooses to deliver functionality
+to its users, not what a qualification record looks like on the wire.
+Implementations are free to build any of these, but the standard does
+not prescribe their shape:
+
+- **Notification preferences and delivery** — per-user channel
+  preferences, reminder scheduling, delivery status tracking, and the
+  supporting data classes (`NotificationTypeSettings`,
+  `SentNotificationStatus`, `NotificationRequest` and its channel
+  variants, `CertificationsStruct`, `TrainingStruct`, `SharingStruct`,
+  `OrgMembershipStruct`, `ReminderConfigStruct`).
+- **Application-level permissions and user preferences** — per-record
+  permission toggles, UI preferences, and acknowledgement flags
+  (`CertPermissionsStruct`, `PermissionsStruct`, `PreferencesStruct`,
+  `AdvisoryAcknowledgementsStruct`).
+- **In-app aggregations and workflow state** —
+  (`InboxCountStruct`, `ApplyTrainingSelectionStruct`).
+
+### Deferred to later versions
+
+See the Roadmap section below for items that are intentionally out of
+v0.1.
 
 ## Types
 
@@ -34,6 +94,7 @@ below).
 |------|------|---------|
 | `CompletionState` | [completion_state.md](completion_state.md) | Unified completion marker used at every hierarchy level. |
 | `StartAndEndTimes` | [start_and_end_times.md](start_and_end_times.md) | Inclusive start/end time pair with derived duration. |
+| Constants | [constants.md](constants.md) | Shared sentinels (e.g. `neverExpireDate`). |
 
 ### TaskBook hierarchy
 
@@ -123,6 +184,26 @@ Discriminator for the polymorphic `TaskTypeConfig` union.
 | `skillsheet` | Task that requires the user to complete a referenced skillsheet. |
 | `cert` | Task that requires the user to hold a referenced certification. |
 
+### `EvaluationType`
+
+Shape of an evaluation task's pass/fail determination. Lives on
+`TaskTypeEvaluationCriteria.evaluation_type`.
+
+| Value | Meaning |
+|-------|---------|
+| `pass_fail` | Binary outcome; no scoring. |
+| `scored` | Point-based outcome; requires `points_possible` and, when a result is recorded, `points_awarded`. |
+
+### `ScoringMode`
+
+How a book-level scoring threshold is applied across sections. Lives
+on `TaskbookEvaluationConfig.scoring_mode`.
+
+| Value | Meaning |
+|-------|---------|
+| `aggregated` | Book sums all scored-evaluation points across every section and applies its own threshold. |
+| `per_section` | Book has no overall threshold; each section applies its own. A `complete_failed` section propagates to the book (see `Taskbook.computeStatus`). |
+
 ### `TaskbookTypes`
 
 | Value | Meaning |
@@ -139,13 +220,19 @@ Discriminator for the polymorphic `TaskTypeConfig` union.
 | `complete` | All renewal requirements have been satisfied. |
 | `overdue` | The renewal due date has passed without completion. |
 
-### `CertificationDurationUnits`
+### `TimeUnit`
 
-Unit for a certification's validity period.
+The single standard enum for calendar-time quantities — durations,
+reporting windows, repeat intervals, and any other calendar-time
+measurement across the standard. Distinct from `RequirementUnits`,
+which measures training credit rather than elapsed time.
 
 | Value |
 |-------|
+| `minutes` |
+| `hours` |
 | `days` |
+| `weeks` |
 | `months` |
 | `quarters` |
 | `years` |
@@ -161,13 +248,36 @@ v0.2.
 
 ### `OrgRoles`
 
+Authority roles a user may hold in an organization. Pre-membership
+states (pending invitation, pending join request, etc.) are outside
+the scope of the standard — a user who is not an accepted member
+holds no role.
+
 | Value | Meaning |
 |-------|---------|
 | `admin` | Full administrative authority. |
 | `officer` | Privileged role below admin. |
 | `member` | Standard org member. |
-| `requested` | Requested to join; not yet accepted. |
-| `invited` | Invited to join; not yet accepted. |
+
+## Organizations in the standard
+
+The standard references organizations by opaque ID — for example, via
+`SignoffPolicy.allowed_orgs`. v0.1 does not publish an `Organization`
+class or prescribe how orgs are stored, how users join or leave, or
+how pending / invited / accepted membership states are modeled.
+
+What v0.1 does require of a compliant host: it must be able to answer,
+for any user, "what roles does this user hold in which orgs?" —
+represented as `Map<orgId, List<OrgRoles>>` and passed into
+`SignoffPolicy.isEligible`. The role vocabulary is fixed by
+`OrgRoles`; memberships returned by the host must contain only values
+from that enum. A user who is not an accepted member of an org must
+not appear in that map for the org in question.
+
+Richer organization modeling — the `Organization` class itself, the
+membership lifecycle, stations and other subunits, and the separation
+between employing organizations (e.g. a fire department) and
+certifying agencies — is planned for v0.2. See Roadmap below.
 
 ## Conventions
 
@@ -188,16 +298,20 @@ v0.2.
   methods are pure functions of the receiver's fields and their
   arguments.
 
-## Not yet in the standard (roadmap)
+## Roadmap
 
-The following are observed in the source apps but deferred to a later
-version:
+Planned expansions to the standard in later versions. See "Scope of
+v0.1" above for the full deferred / out-of-scope split.
 
-- Taskbook-level status computation (follows the same waterfall pattern
-  as section-level; reference implementation planned for v0.2).
-- `RequirementUnits` beyond `hours`.
-- `org_officers` / `org_admins` as first-class signoff policy types.
-- Notification preference structs (`CertificationsStruct`,
-  `TrainingStruct`, `SharingStruct`, etc.) — these need consolidation
-  before being published.
-- Identity and address types — scope to be decided.
+- **Organization modeling** — a portable `Organization` class, the
+  membership lifecycle (invited, requested, accepted), subunits such
+  as stations, and the distinction between employing organizations
+  and certifying agencies. v0.1 treats orgs as opaque references
+  (see "Organizations in the standard" above). Planned for v0.2.
+- **Additional `RequirementUnits`** (CE credits, sessions, contact
+  hours). The current `hours`-only set will expand once the target
+  disciplines' measurement conventions are agreed.
+- **`org_officers` / `org_admins` as first-class signoff policy
+  types.** v0.1 expresses them as `org_members` with specific
+  `allowedRoles`; promoting them to first-class values is a later
+  decision.

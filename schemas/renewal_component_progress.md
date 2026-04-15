@@ -19,9 +19,9 @@ Progress on one `RenewalComponent`.
 
 ## Notes
 
-- The source struct stores `List<DocumentReference> appliedTraining`.
-  OpenQual replaces this with `List<String> applied_training_ids` of
-  opaque IDs; training-record resolution is the host application's
+- `applied_training_ids` stores opaque string IDs of the training
+  records that counted toward this component. Resolution to the
+  referenced training records is the host application's
   responsibility.
 - `effective_quantity_completed` is always `min(component_quantity,
   component_quantity_completed)` and is the value that contributes to

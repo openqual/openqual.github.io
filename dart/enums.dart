@@ -44,14 +44,22 @@ enum SignoffPolicyType { thisUser, specifyUsers, orgMembers }
 /// Polymorphic discriminator for [TaskbookTask.type].
 enum TaskTypes { task, evaluation, taskbook, skillsheet, cert }
 
+/// Shape of an evaluation task's pass/fail determination.
+enum EvaluationType { passFail, scored }
+
+/// How a book-level scoring threshold is applied across sections.
+enum ScoringMode { aggregated, perSection }
+
 /// Polymorphic discriminator for [Taskbook.taskbookType].
 enum TaskbookTypes { taskbook, skillsheet }
 
 /// Computed status of a certification renewal cycle.
 enum RenewalStatus { notStarted, inProgress, complete, overdue }
 
-/// Unit for a certification's validity period.
-enum CertificationDurationUnits { days, months, quarters, years }
+/// Unified calendar-time unit. The single standard enum for calendar-time
+/// quantities (durations, reporting windows, repeat intervals). Distinct
+/// from [RequirementUnits], which measures training credit, not time.
+enum TimeUnit { minutes, hours, days, weeks, months, quarters, years }
 
 /// Unit for a [RenewalRequirement]'s target quantity.
 ///
@@ -59,5 +67,9 @@ enum CertificationDurationUnits { days, months, quarters, years }
 /// v0.2.
 enum RequirementUnits { hours }
 
-/// Organization roles.
-enum OrgRoles { admin, officer, member, requested, invited }
+/// Authority roles a user may hold in an organization.
+///
+/// These are authority roles only. Pre-membership states (e.g. pending
+/// invitation, pending join request) are outside the scope of the
+/// standard; a user who is not an accepted member holds no role.
+enum OrgRoles { admin, officer, member }

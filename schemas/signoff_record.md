@@ -22,13 +22,14 @@ it is an audit trail.
 - All fields are captured at the moment of signing and frozen.
   Implementations must not backfill or mutate `signatory_name` if the
   user's display name changes later.
-- `signed_at` should match the `completion_timestamp` on the
-  corresponding `SignoffPolicy`.
+- `signed_at` **must** equal the `completion_timestamp` on the
+  corresponding `SignoffPolicy`. See the signing contract in
+  `signoff_policy.md`.
 
 ## Notes
 
-- This type is new in OpenQual v0.1 and does not exist in the source
-  apps. The source apps carry `completed_by_ref` (a live
-  `DocumentReference`) and `completed_by_name` on the policy struct
-  itself; OpenQual formalizes the record as a standalone, frozen
-  value.
+- `SignoffRecord` is a standalone, frozen audit value. The standard
+  deliberately separates it from `SignoffPolicy` so that the
+  authorization rules (who may sign) live on the policy and the
+  captured identity of who did sign lives on a record that cannot be
+  edited.

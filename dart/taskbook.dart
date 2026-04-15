@@ -16,6 +16,7 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'completion_state.dart';
+import 'constants.dart';
 import 'enums.dart';
 import 'signoff_policy.dart';
 import 'start_and_end_times.dart';
@@ -86,7 +87,7 @@ class Taskbook {
           8, (_) => chars.codeUnitAt(rnd.nextInt(chars.length))));
     }
 
-    final farFuture = DateTime(9999, 12, 31);
+    final farFuture = neverExpireDate;
 
     try {
       final cleaned = jsonString.replaceAll('```json', '').replaceAll('```', '');
@@ -186,6 +187,223 @@ class Taskbook {
     final newSections = List<TaskbookSection>.from(sections);
     newSections[sIdx] = section.copyWith(tasks: newTasks);
     return copyWith(sections: newSections);
+  }
+
+  /// Pure. Computes the book's status, progress, and taskbook_summary,
+  /// and returns an updated Taskbook with every section recomputed via
+  /// [TaskbookSection.computeStatus] so the full tree is consistent.
+  /// See schemas/taskbook.md for the full waterfall.
+  Taskbook computeStatus({required DateTime now}) {
+    final computedSections =
+        sections.map((s) => s.computeStatus()).toList();
+
+    final allTasks = <TaskbookTask>[];
+    for (final s in computedSections) {
+      allTasks.addAll(s.tasks);
+    }
+
+    // Scoring aggregation over all scored evaluation tasks in the book.
+    final scoredTasks = allTasks.where((t) {
+      final c = t.typeConfig?.evaluationConfig?.criteria;
+      return t.type == TaskTypes.evaluation &&
+          c?.evaluationType == EvaluationType.scored;
+    }).toList();
+
+    final pointsPossible = scoredTasks.fold<double>(
+        0.0,
+        (sum, t) =>
+            sum +
+            (t.typeConfig?.evaluationConfig?.criteria?.pointsPossible ?? 0.0));
+    final pointsAwarded = scoredTasks
+        .where((t) => t.typeConfig?.evaluationConfig?.result != null)
+        .fold<double>(
+            0.0,
+            (sum, t) =>
+                sum +
+                (t.typeConfig?.evaluationConfig?.result?.pointsAwarded ??
+                    0.0));
+    final pointsRemaining = scoredTasks
+        .where((t) => t.typeConfig?.evaluationConfig?.result == null)
+        .fold<double>(
+            0.0,
+            (sum, t) =>
+                sum +
+                (t.typeConfig?.evaluationConfig?.criteria?.pointsPossible ??
+                    0.0));
+
+    final mode = evaluationConfig?.scoringMode ?? ScoringMode.aggregated;
+    final isAggregated = mode == ScoringMode.aggregated;
+    final isPerSection = mode == ScoringMode.perSection;
+
+    // Book-level threshold (aggregated mode only).
+    double? effThresholdPoints;
+    double? effThresholdPercentage;
+    if (isAggregated) {
+      final minPts = evaluationConfig?.scoringConfig?.minPassingPoints;
+      var minPct = evaluationConfig?.scoringConfig?.minPassingPercentage;
+      if (minPct != null && minPct > 1.0) {
+        minPct = minPct / 100.0;
+      }
+      if (minPts != null) {
+        effThresholdPoints = minPts;
+        if (pointsPossible > 0) {
+          effThresholdPercentage = minPts / pointsPossible;
+        }
+      } else if (minPct != null) {
+        effThresholdPercentage = minPct;
+        if (pointsPossible > 0) {
+          effThresholdPoints = (minPct * pointsPossible).ceilToDouble();
+        }
+      }
+    }
+
+    final maxPossibleScore = pointsAwarded + pointsRemaining;
+    final allScoredEvalsDone =
+        scoredTasks.isNotEmpty && pointsRemaining == 0.0;
+    final hasThreshold = effThresholdPoints != null;
+    final cannotPass =
+        isAggregated && hasThreshold && maxPossibleScore < effThresholdPoints;
+    final failedPoints = isAggregated &&
+        hasThreshold &&
+        allScoredEvalsDone &&
+        pointsAwarded < effThresholdPoints;
+
+    final hasAutofailFailure = allTasks.any((t) {
+      if (t.status != WorkItemStatus.completeFailed) return false;
+      return t.typeConfig?.evaluationConfig?.criteria?.autofail == true;
+    });
+    final hasFailedSection = computedSections
+        .any((s) => s.status == WorkItemStatus.completeFailed);
+
+    // Signoffs at the book level.
+    final hasPolicy = signoffPolicy.isNotEmpty;
+    final signoffOK = signoffsOK(signoffPolicy, signoffsRequireAll);
+    final signoffInProgress = hasPolicy &&
+        !signoffOK &&
+        signoffPolicy.any((p) => p.completed);
+
+    final sectionsTotal = computedSections.length;
+    final sectionsDone = computedSections
+        .where((s) =>
+            s.status == WorkItemStatus.complete ||
+            s.status == WorkItemStatus.completeFailed)
+        .length;
+    final allSectionsDone =
+        sectionsTotal == 0 || sectionsDone == sectionsTotal;
+    final anySectionBeyondNotStarted = computedSections
+        .any((s) => s.status != WorkItemStatus.notStarted);
+
+    final workExists = sectionsTotal > 0 || hasPolicy;
+    final isComplete = completion.complete;
+
+    // Priority waterfall.
+    WorkItemStatus newStatus = WorkItemStatus.notStarted;
+    if (hasAutofailFailure) {
+      newStatus = WorkItemStatus.completeFailed;
+    } else if (cannotPass) {
+      newStatus = WorkItemStatus.completeFailed;
+    } else if (failedPoints) {
+      newStatus = WorkItemStatus.completeFailed;
+    } else if (isPerSection && hasFailedSection) {
+      newStatus = WorkItemStatus.completeFailed;
+    } else if (isComplete && signoffOK) {
+      newStatus = WorkItemStatus.complete;
+    } else if (isComplete && !signoffOK) {
+      newStatus = WorkItemStatus.pendingValidation;
+    } else if (workExists && allSectionsDone && signoffOK && !isComplete) {
+      newStatus = WorkItemStatus.ownerActionNeeded;
+    } else if (anySectionBeyondNotStarted || signoffInProgress) {
+      newStatus = WorkItemStatus.inProgress;
+    }
+
+    // Progress.
+    double newProgress;
+    if (newStatus == WorkItemStatus.complete ||
+        newStatus == WorkItemStatus.completeFailed) {
+      newProgress = 1.0;
+    } else if (sectionsTotal > 0) {
+      newProgress =
+          computedSections.fold<double>(0.0, (a, s) => a + s.progress) /
+              sectionsTotal;
+    } else {
+      newProgress = 0.0;
+    }
+
+    // Histograms.
+    int countTasks(WorkItemStatus s) =>
+        allTasks.where((t) => t.status == s).length;
+    int countSections(WorkItemStatus s) =>
+        computedSections.where((sec) => sec.status == s).length;
+
+    // Signoff totals across book, sections, and tasks.
+    var signoffsRequiredTotal = signoffPolicy.length;
+    var signoffsCompletedTotal =
+        signoffPolicy.where((p) => p.completed).length;
+    for (final s in computedSections) {
+      signoffsRequiredTotal += s.signoffPolicyOverride.length;
+      signoffsCompletedTotal +=
+          s.signoffPolicyOverride.where((p) => p.completed).length;
+      for (final t in s.tasks) {
+        signoffsRequiredTotal += t.signoffPolicyOverride.length;
+        signoffsCompletedTotal +=
+            t.signoffPolicyOverride.where((p) => p.completed).length;
+      }
+    }
+
+    final bookScoringSummary = scoredTasks.isEmpty
+        ? null
+        : BookScoringSummary(
+            pointsPossible: pointsPossible,
+            pointsAwarded: pointsAwarded,
+            pointsRemaining: pointsRemaining,
+            effectiveThresholdPoints: effThresholdPoints,
+            effectiveThresholdPercentage: effThresholdPercentage,
+          );
+
+    final summary = TaskbookSummary(
+      tasksTotal: allTasks.length,
+      tasksNotStarted: countTasks(WorkItemStatus.notStarted),
+      tasksInProgress: countTasks(WorkItemStatus.inProgress),
+      tasksOwnerActionNeeded: countTasks(WorkItemStatus.ownerActionNeeded),
+      tasksPendingValidation: countTasks(WorkItemStatus.pendingValidation),
+      tasksComplete: countTasks(WorkItemStatus.complete),
+      tasksCompleteFailed: countTasks(WorkItemStatus.completeFailed),
+      sectionsTotal: sectionsTotal,
+      sectionsNotStarted: countSections(WorkItemStatus.notStarted),
+      sectionsInProgress: countSections(WorkItemStatus.inProgress),
+      sectionsOwnerActionNeeded:
+          countSections(WorkItemStatus.ownerActionNeeded),
+      sectionsPendingValidation:
+          countSections(WorkItemStatus.pendingValidation),
+      sectionsComplete: countSections(WorkItemStatus.complete),
+      sectionsCompleteFailed: countSections(WorkItemStatus.completeFailed),
+      taskbookOwnerActionNeeded:
+          newStatus == WorkItemStatus.ownerActionNeeded,
+      signoffsRequiredTotal: signoffsRequiredTotal,
+      signoffsCompletedTotal: signoffsCompletedTotal,
+      scoringSummary: bookScoringSummary,
+      lastModified: now,
+    );
+
+    return copyWith(
+      sections: computedSections,
+      status: newStatus,
+      progress: newProgress,
+      taskbookSummary: summary,
+    );
+  }
+
+  /// Pure. Returns `1.0` when status is complete or complete_failed;
+  /// otherwise the arithmetic mean of child sections' progress, or
+  /// `0.0` when the book has no sections.
+  double computeProgress() {
+    if (status == WorkItemStatus.complete ||
+        status == WorkItemStatus.completeFailed) {
+      return 1.0;
+    }
+    if (sections.isEmpty) return 0.0;
+    return sections.fold<double>(0.0, (a, s) => a + s.progress) /
+        sections.length;
   }
 
   Taskbook copyWith({

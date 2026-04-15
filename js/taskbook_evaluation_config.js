@@ -14,6 +14,8 @@
 
 'use strict';
 
+const { ScoringMode } = require('./enums');
+
 class BookScoringConfig {
   constructor({ minPassingPoints = null, minPassingPercentage = null } = {}) {
     this.minPassingPoints = minPassingPoints;
@@ -23,7 +25,7 @@ class BookScoringConfig {
 }
 
 class TaskbookEvaluationConfig {
-  constructor({ scoringMode = 'aggregated', scoringConfig = null } = {}) {
+  constructor({ scoringMode = ScoringMode.AGGREGATED, scoringConfig = null } = {}) {
     this.scoringMode = scoringMode;
     this.scoringConfig = scoringConfig;
     Object.freeze(this);

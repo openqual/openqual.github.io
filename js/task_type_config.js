@@ -21,7 +21,7 @@ class TaskTypeEvaluationCriteria {
     pointsPossible = null,
     minPassingPoints = null,
   }) {
-    this.evaluationType = evaluationType; // 'pass_fail' or 'scored'
+    this.evaluationType = evaluationType; // EvaluationType enum value
     this.autofail = autofail;
     this.pointsPossible = pointsPossible;
     this.minPassingPoints = minPassingPoints;

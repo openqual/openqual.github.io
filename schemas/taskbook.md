@@ -65,14 +65,49 @@ node updated:
 
 Sets `complete = true` and `completed_at` to the current time. Returns
 the receiver unchanged if the identified node is not found. Does not
-recompute `status` — call `TaskbookTask.computeStatus` and
-`TaskbookSection.computeStatus` (or the book-level waterfall) after
-marking complete.
+recompute `status` — call `Taskbook.computeStatus` after marking
+complete.
 
-## Notes
+### `Taskbook.computeStatus() → Taskbook`
 
-- The authoritative book-level status computation is not yet published
-  (see the v0.1 roadmap). The section-level waterfall (in
-  `taskbook_section.md`) covers the same patterns at the book level:
-  autofail / cannot-pass / did-not-pass via `evaluation_config`, plus
-  owner completion and signoff gating via the fields above.
+Pure. Computes the book's `status`, `progress`, and `taskbook_summary`.
+Returns an updated `Taskbook` with every section also recomputed via
+`TaskbookSection.computeStatus()` so the full tree is consistent.
+
+**Priority waterfall:**
+
+1. **Autofail propagation.** If any task anywhere in the book has
+   `status = complete_failed` AND its evaluation criteria has
+   `autofail = true` → `complete_failed`.
+2. **Cannot pass.** If `evaluation_config.scoring_mode = aggregated`
+   AND `evaluation_config.scoring_config` has a threshold AND
+   `points_awarded + points_remaining < effective_threshold_points`
+   → `complete_failed`.
+3. **Did not pass.** If `evaluation_config.scoring_mode = aggregated`
+   AND `evaluation_config.scoring_config` has a threshold AND all
+   scored evaluations in the book have a result AND
+   `points_awarded < effective_threshold_points` → `complete_failed`.
+4. **Per-section failure propagation.** If
+   `evaluation_config.scoring_mode = per_section` AND any section has
+   `status = complete_failed` → `complete_failed`.
+5. **Complete.** If `completion.complete` AND book-level signoffs are
+   OK → `complete`.
+6. **Pending validation.** If `completion.complete` AND book-level
+   signoffs are not OK → `pending_validation`.
+7. **Owner action needed.** If work exists (any sections, or a
+   book-level policy), all sections are `complete` or
+   `complete_failed`, book signoffs are OK, and `completion.complete`
+   is `false` → `owner_action_needed`.
+8. **In progress.** If any section has progressed beyond
+   `not_started`, or any book-level signoff has been completed
+   → `in_progress`.
+9. **Default.** → `not_started`.
+
+"Signoffs OK" is defined as in `TaskbookSection.computeStatus`,
+applied to the book's `signoff_policy` and `signoffs_require_all`.
+
+### `Taskbook.computeProgress() → double`
+
+Pure. Returns `1.0` when `status` is `complete` or `complete_failed`.
+Otherwise returns the arithmetic mean of child sections' `progress`,
+or `0.0` when the book has no sections.

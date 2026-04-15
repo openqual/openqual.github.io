@@ -12,23 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import 'enums.dart';
-
-/// Book-level scoring threshold.
-class BookScoringConfig {
-  final double? minPassingPoints;
-  final double? minPassingPercentage;
-
-  const BookScoringConfig({this.minPassingPoints, this.minPassingPercentage});
-}
-
-/// Book-level scoring configuration.
-class TaskbookEvaluationConfig {
-  final ScoringMode scoringMode;
-  final BookScoringConfig? scoringConfig;
-
-  const TaskbookEvaluationConfig({
-    this.scoringMode = ScoringMode.aggregated,
-    this.scoringConfig,
-  });
-}
+/// Standard sentinel for "no expiration / far future" dates.
+///
+/// See schemas/constants.md for the normative definition. Implementations
+/// that need such a sentinel must use this value rather than inventing
+/// their own. Chosen to avoid quirks observed with `9999-12-31` in some
+/// JavaScript `Date` pipelines and backend storage layers.
+final DateTime neverExpireDate = DateTime.utc(2199, 12, 31);

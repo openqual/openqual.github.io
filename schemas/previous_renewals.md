@@ -69,7 +69,6 @@ caller. The published implementation clamps.
 ## Notes
 
 - All three "applied training unit totals" inputs are pre-computed
-  sums, not lists of IDs. This is the key refactor that makes the
-  function pure: the source apps fetched training records from
-  Firestore to compute these sums; OpenQual pushes that I/O to the
-  caller.
+  sums, not lists of IDs. This keeps the function pure: the caller is
+  responsible for resolving training records and summing their units
+  before calling `calculateCertificationProgress`.

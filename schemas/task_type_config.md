@@ -27,7 +27,7 @@ discriminator.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `evaluation_type` | `String` | Yes | Either `pass_fail` or `scored`. |
+| `evaluation_type` | `EvaluationType` | Yes | `pass_fail` or `scored`. |
 | `autofail` | `bool` | Yes | When `true`, a failed result on this task propagates `complete_failed` up to the parent section (and book). Defaults to `false`. |
 | `points_possible` | `double?` | No | Required when `evaluation_type = scored`. Zero is valid. |
 | `min_passing_points` | `double?` | No | Optional task-level passing threshold. Used for UI feedback; the authoritative pass/fail signal is still `result.outcome`. |
@@ -38,7 +38,7 @@ discriminator.
 |-------|------|----------|-------------|
 | `outcome` | `EvaluationOutcome?` | No | `pass` or `fail`. Absence means the evaluation has not been finalized. |
 | `points_awarded` | `double?` | No | Required when `criteria.evaluation_type = scored` and `outcome` is set. Must not exceed `criteria.points_possible`; implementations clamp. |
-| `evaluated_by` | `String?` | No | Opaque evaluator user ID. Portable equivalent of the source `DocumentReference`. |
+| `evaluated_by` | `String?` | No | Opaque evaluator user ID. |
 | `evaluated_at` | `DateTime?` | No | Timestamp of the evaluation. |
 | `notes` | `String?` | No | Evaluator notes. |
 
@@ -71,7 +71,6 @@ Identical shape to `TaskTypeTaskbookConfig`.
 - `evaluation_type = scored` requires `points_possible`; a scored
   evaluation with `outcome = fail` still carries `points_awarded` for
   reporting.
-- The source apps use `DocumentReference` for `evaluated_by`,
-  `taskbook_template_ref`, and `cert_type_ref`. OpenQual replaces each
-  with an opaque string ID; resolution is the host application's
-  responsibility.
+- `evaluated_by`, `taskbook_template_ref`, and `cert_type_ref` are
+  opaque string IDs. Resolution to the referenced entity is the host
+  application's responsibility and is not specified by OpenQual.

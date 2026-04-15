@@ -15,9 +15,12 @@
 'use strict';
 
 const { CompletionState } = require('./completion_state');
-const { WorkItemStatus, TaskbookTypes, TaskTypes } = require('./enums');
+const { neverExpireDate } = require('./constants');
+const { WorkItemStatus, TaskbookTypes, TaskTypes, EvaluationType, ScoringMode } = require('./enums');
+const { signoffsOK } = require('./signoff_policy');
 const { TaskbookSection } = require('./taskbook_section');
 const { TaskbookTask } = require('./taskbook_task');
+const { TaskbookSummary, BookScoringSummary } = require('./taskbook_summary');
 
 const ID_CHARS =
   'AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz1234567890';
@@ -77,7 +80,7 @@ class Taskbook {
   /** Parses a JSON string (typically from an AI import). Returns a safe error Taskbook on failure. */
   static fromExternalJson(jsonString, { idGenerator = _generateId } = {}) {
     if (!jsonString) return new Taskbook({ title: '' });
-    const farFuture = new Date(Date.UTC(9999, 11, 31));
+    const farFuture = neverExpireDate;
     try {
       const cleaned = String(jsonString).replace(/```json/g, '').replace(/```/g, '');
       const data = JSON.parse(cleaned);
@@ -172,6 +175,194 @@ class Taskbook {
       tasks: _replace(section.tasks, tIdx, updatedTask),
     });
     return this._with({ sections: _replace(this.sections, sIdx, updatedSection) });
+  }
+
+  /**
+   * Pure. Computes the book's status, progress, and taskbook_summary,
+   * and returns an updated Taskbook with every section recomputed via
+   * TaskbookSection.computeStatus so the full tree is consistent.
+   * See schemas/taskbook.md for the full waterfall.
+   */
+  computeStatus({ now }) {
+    const computedSections = this.sections.map((s) => s.computeStatus());
+
+    const allTasks = [];
+    for (const s of computedSections) {
+      for (const t of s.tasks) allTasks.push(t);
+    }
+
+    const scoredTasks = allTasks.filter((t) => {
+      const c = t.typeConfig?.evaluationConfig?.criteria;
+      return t.type === TaskTypes.EVALUATION && c?.evaluationType === EvaluationType.SCORED;
+    });
+
+    const pointsPossible = scoredTasks.reduce(
+      (sum, t) => sum + (t.typeConfig?.evaluationConfig?.criteria?.pointsPossible ?? 0),
+      0,
+    );
+    const pointsAwarded = scoredTasks
+      .filter((t) => t.typeConfig?.evaluationConfig?.result != null)
+      .reduce(
+        (sum, t) => sum + (t.typeConfig?.evaluationConfig?.result?.pointsAwarded ?? 0),
+        0,
+      );
+    const pointsRemaining = scoredTasks
+      .filter((t) => t.typeConfig?.evaluationConfig?.result == null)
+      .reduce(
+        (sum, t) => sum + (t.typeConfig?.evaluationConfig?.criteria?.pointsPossible ?? 0),
+        0,
+      );
+
+    const mode = this.evaluationConfig?.scoringMode ?? ScoringMode.AGGREGATED;
+    const isAggregated = mode === ScoringMode.AGGREGATED;
+    const isPerSection = mode === ScoringMode.PER_SECTION;
+
+    let effThresholdPoints = null;
+    let effThresholdPercentage = null;
+    if (isAggregated) {
+      const minPts = this.evaluationConfig?.scoringConfig?.minPassingPoints ?? null;
+      let minPct = this.evaluationConfig?.scoringConfig?.minPassingPercentage ?? null;
+      if (minPct != null && minPct > 1.0) minPct = minPct / 100.0;
+      if (minPts != null) {
+        effThresholdPoints = minPts;
+        if (pointsPossible > 0) effThresholdPercentage = minPts / pointsPossible;
+      } else if (minPct != null) {
+        effThresholdPercentage = minPct;
+        if (pointsPossible > 0) effThresholdPoints = Math.ceil(minPct * pointsPossible);
+      }
+    }
+
+    const maxPossibleScore = pointsAwarded + pointsRemaining;
+    const allScoredEvalsDone = scoredTasks.length > 0 && pointsRemaining === 0;
+    const hasThreshold = effThresholdPoints != null;
+    const cannotPass = isAggregated && hasThreshold && maxPossibleScore < effThresholdPoints;
+    const failedPoints =
+      isAggregated && hasThreshold && allScoredEvalsDone && pointsAwarded < effThresholdPoints;
+
+    const hasAutofailFailure = allTasks.some((t) => {
+      if (t.status !== WorkItemStatus.COMPLETE_FAILED) return false;
+      return t.typeConfig?.evaluationConfig?.criteria?.autofail === true;
+    });
+    const hasFailedSection = computedSections.some(
+      (s) => s.status === WorkItemStatus.COMPLETE_FAILED,
+    );
+
+    const hasPolicy = this.signoffPolicy.length > 0;
+    const signoffOK = signoffsOK(this.signoffPolicy, this.signoffsRequireAll);
+    const signoffInProgress =
+      hasPolicy && !signoffOK && this.signoffPolicy.some((p) => p.completed);
+
+    const sectionsTotal = computedSections.length;
+    const sectionsDone = computedSections.filter(
+      (s) =>
+        s.status === WorkItemStatus.COMPLETE ||
+        s.status === WorkItemStatus.COMPLETE_FAILED,
+    ).length;
+    const allSectionsDone = sectionsTotal === 0 || sectionsDone === sectionsTotal;
+    const anySectionBeyondNotStarted = computedSections.some(
+      (s) => s.status !== WorkItemStatus.NOT_STARTED,
+    );
+
+    const workExists = sectionsTotal > 0 || hasPolicy;
+    const isComplete = this.completion.complete;
+
+    let newStatus = WorkItemStatus.NOT_STARTED;
+    if (hasAutofailFailure) newStatus = WorkItemStatus.COMPLETE_FAILED;
+    else if (cannotPass) newStatus = WorkItemStatus.COMPLETE_FAILED;
+    else if (failedPoints) newStatus = WorkItemStatus.COMPLETE_FAILED;
+    else if (isPerSection && hasFailedSection) newStatus = WorkItemStatus.COMPLETE_FAILED;
+    else if (isComplete && signoffOK) newStatus = WorkItemStatus.COMPLETE;
+    else if (isComplete && !signoffOK) newStatus = WorkItemStatus.PENDING_VALIDATION;
+    else if (workExists && allSectionsDone && signoffOK && !isComplete)
+      newStatus = WorkItemStatus.OWNER_ACTION_NEEDED;
+    else if (anySectionBeyondNotStarted || signoffInProgress)
+      newStatus = WorkItemStatus.IN_PROGRESS;
+
+    let newProgress;
+    if (
+      newStatus === WorkItemStatus.COMPLETE ||
+      newStatus === WorkItemStatus.COMPLETE_FAILED
+    ) {
+      newProgress = 1.0;
+    } else if (sectionsTotal > 0) {
+      newProgress =
+        computedSections.reduce((a, s) => a + s.progress, 0) / sectionsTotal;
+    } else {
+      newProgress = 0.0;
+    }
+
+    const countTasks = (s) => allTasks.filter((t) => t.status === s).length;
+    const countSections = (s) =>
+      computedSections.filter((sec) => sec.status === s).length;
+
+    let signoffsRequiredTotal = this.signoffPolicy.length;
+    let signoffsCompletedTotal = this.signoffPolicy.filter((p) => p.completed).length;
+    for (const s of computedSections) {
+      signoffsRequiredTotal += s.signoffPolicyOverride.length;
+      signoffsCompletedTotal += s.signoffPolicyOverride.filter((p) => p.completed).length;
+      for (const t of s.tasks) {
+        signoffsRequiredTotal += t.signoffPolicyOverride.length;
+        signoffsCompletedTotal += t.signoffPolicyOverride.filter((p) => p.completed).length;
+      }
+    }
+
+    const scoringSummary =
+      scoredTasks.length === 0
+        ? null
+        : new BookScoringSummary({
+            pointsPossible,
+            pointsAwarded,
+            pointsRemaining,
+            effectiveThresholdPoints,
+            effectiveThresholdPercentage,
+          });
+
+    const summary = new TaskbookSummary({
+      tasksTotal: allTasks.length,
+      tasksNotStarted: countTasks(WorkItemStatus.NOT_STARTED),
+      tasksInProgress: countTasks(WorkItemStatus.IN_PROGRESS),
+      tasksOwnerActionNeeded: countTasks(WorkItemStatus.OWNER_ACTION_NEEDED),
+      tasksPendingValidation: countTasks(WorkItemStatus.PENDING_VALIDATION),
+      tasksComplete: countTasks(WorkItemStatus.COMPLETE),
+      tasksCompleteFailed: countTasks(WorkItemStatus.COMPLETE_FAILED),
+      sectionsTotal,
+      sectionsNotStarted: countSections(WorkItemStatus.NOT_STARTED),
+      sectionsInProgress: countSections(WorkItemStatus.IN_PROGRESS),
+      sectionsOwnerActionNeeded: countSections(WorkItemStatus.OWNER_ACTION_NEEDED),
+      sectionsPendingValidation: countSections(WorkItemStatus.PENDING_VALIDATION),
+      sectionsComplete: countSections(WorkItemStatus.COMPLETE),
+      sectionsCompleteFailed: countSections(WorkItemStatus.COMPLETE_FAILED),
+      taskbookOwnerActionNeeded: newStatus === WorkItemStatus.OWNER_ACTION_NEEDED,
+      signoffsRequiredTotal,
+      signoffsCompletedTotal,
+      scoringSummary,
+      lastModified: now,
+    });
+
+    return this._with({
+      sections: computedSections,
+      status: newStatus,
+      progress: newProgress,
+      taskbookSummary: summary,
+    });
+  }
+
+  /**
+   * Pure. Returns 1.0 when status is complete or complete_failed;
+   * otherwise the arithmetic mean of child sections' progress, or 0.0
+   * when the book has no sections.
+   */
+  computeProgress() {
+    if (
+      this.status === WorkItemStatus.COMPLETE ||
+      this.status === WorkItemStatus.COMPLETE_FAILED
+    ) {
+      return 1.0;
+    }
+    if (this.sections.length === 0) return 0.0;
+    return (
+      this.sections.reduce((a, s) => a + s.progress, 0) / this.sections.length
+    );
   }
 
   _with(overrides) {

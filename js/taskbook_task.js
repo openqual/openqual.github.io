@@ -15,7 +15,7 @@
 'use strict';
 
 const { CompletionState } = require('./completion_state');
-const { WorkItemStatus, TaskTypes, EvaluationOutcome } = require('./enums');
+const { WorkItemStatus, TaskTypes, EvaluationOutcome, EvaluationType } = require('./enums');
 const { signoffsOK } = require('./signoff_policy');
 const {
   TaskTypeConfig,
@@ -122,7 +122,7 @@ class TaskbookTask {
     const criteria = this.typeConfig?.evaluationConfig?.criteria ?? null;
     const result = this.typeConfig?.evaluationConfig?.result ?? null;
     if (!criteria || !result) return this;
-    if (criteria.evaluationType !== 'scored') return this;
+    if (criteria.evaluationType !== EvaluationType.SCORED) return this;
     const possible = criteria.pointsPossible ?? 0;
     const awarded = result.pointsAwarded ?? 0;
     if (awarded <= possible) return this;

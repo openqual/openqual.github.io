@@ -21,7 +21,7 @@ class SignoffPolicy {
   final SignoffPolicyType type;
   final List<String> allowedUsers;
   final List<String> allowedOrgs;
-  final List<String> allowedRoles;
+  final List<OrgRoles> allowedRoles;
   final bool completed;
   final DateTime? completionTimestamp;
   final SignoffRecord? signoffRecord;
@@ -47,7 +47,7 @@ class SignoffPolicy {
   bool isEligible(
     String userId,
     String taskbookOwnerId,
-    Map<String, List<String>> orgMemberships,
+    Map<String, List<OrgRoles>> orgMemberships,
   ) {
     switch (type) {
       case SignoffPolicyType.thisUser:
@@ -65,6 +65,20 @@ class SignoffPolicy {
         }
         return false;
     }
+  }
+
+  /// Pure. Returns `true` iff the policy is in a compliant state per
+  /// the signing contract in schemas/signoff_policy.md.
+  ///
+  /// - An unsigned policy (`completed = false`) is always compliant.
+  /// - A signed policy is compliant iff `completionTimestamp` and
+  ///   `signoffRecord` are both set and `signoffRecord.signedAt`
+  ///   equals `completionTimestamp`.
+  bool isValidSigned() {
+    if (!completed) return true;
+    if (completionTimestamp == null) return false;
+    if (signoffRecord == null) return false;
+    return signoffRecord!.signedAt == completionTimestamp;
   }
 
   SignoffPolicy copyWith({

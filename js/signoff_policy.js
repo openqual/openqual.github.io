@@ -41,7 +41,7 @@ class SignoffPolicy {
   /**
    * @param {string} userId
    * @param {string} taskbookOwnerId
-   * @param {Object<string, string[]>} orgMemberships map from orgId to role list
+   * @param {Object<string, string[]>} orgMemberships map from orgId to list of OrgRoles values
    * @returns {boolean}
    */
   isEligible(userId, taskbookOwnerId, orgMemberships) {
@@ -61,6 +61,27 @@ class SignoffPolicy {
       default:
         return false;
     }
+  }
+
+  /**
+   * Returns true iff the policy is in a compliant state per the signing
+   * contract in schemas/signoff_policy.md.
+   *
+   * - An unsigned policy (completed = false) is always compliant.
+   * - A signed policy is compliant iff completionTimestamp and
+   *   signoffRecord are both set and signoffRecord.signedAt equals
+   *   completionTimestamp.
+   * @returns {boolean}
+   */
+  isValidSigned() {
+    if (!this.completed) return true;
+    if (this.completionTimestamp == null) return false;
+    if (this.signoffRecord == null) return false;
+    const a = this.signoffRecord.signedAt;
+    const b = this.completionTimestamp;
+    if (a === b) return true;
+    if (a instanceof Date && b instanceof Date) return a.getTime() === b.getTime();
+    return false;
   }
 }
 

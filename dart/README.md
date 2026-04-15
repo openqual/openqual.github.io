@@ -10,10 +10,10 @@ and the code is the bug.
 ## Scope
 
 This is a reference implementation, not a published package. Copy the
-files you need into your own Flutter / Dart project and adapt them to
-your data layer. Every class is a plain value object with no
-Firebase, FlutterFlow, Firestore, or `dart:io` dependencies — only
-`dart:convert` and `dart:math` (used by `Taskbook.fromExternalJson`).
+files you need into your own Dart or Flutter project. Every class is a
+plain value object. The only standard-library imports are
+`dart:convert` and `dart:math`, both used by
+`Taskbook.fromExternalJson`.
 
 ## Layout
 
@@ -61,14 +61,14 @@ final recomputed = book.copyWith(
 
 ## Purity contract
 
-Every method in this directory is pure: no Firestore, no network, no
-platform calls. If you need to fetch training records or user
-memberships, do so in your own code and pass the results in as
-arguments (see `SignoffPolicy.isEligible` and
-`calculateCertificationProgress`).
+Every method in this directory is pure: no I/O, no network, no
+platform calls. If a computation needs data that lives outside the
+receiver — training records, user memberships, etc. — the caller
+fetches it and passes it in as an argument (see
+`SignoffPolicy.isEligible` and `calculateCertificationProgress`).
 
 ## Serialization
 
 Intentionally not included. The standard does not prescribe a wire
-format; bring your own JSON/Firestore/etc. mapping in the host
-application.
+format; host applications supply their own mapping to whatever
+storage or transport they use.

@@ -3,6 +3,45 @@
 Analysis only. No code has been extracted or generated. Human review
 determines the final shape of the OpenQual standard before any extraction.
 
+> **Scope note (v0.1 release).** This inventory captured the full
+> superset of portable candidates observed in the source apps. The
+> v0.1 release publishes a focused subset — the TaskBook core
+> hierarchy and the certification renewal slice — plus shared
+> constants. Several items listed below as `INCLUDE` were subsequently
+> reclassified during scope-finalization review:
+>
+> - **Reclassified as app concerns (out of standard scope):**
+>   notification preference structs (`CertificationsStruct`,
+>   `TrainingStruct`, `SharingStruct`, `OrgMembershipStruct`,
+>   `ReminderConfigStruct`) and their CloudFunctions analogues
+>   (`NotificationTypeSettings`, `SentNotificationStatus`,
+>   `NotificationRequest` family, etc.); application-level permissions
+>   and preferences (`CertPermissionsStruct`, `PermissionsStruct`,
+>   `PreferencesStruct`, `AdvisoryAcknowledgementsStruct`); in-app
+>   aggregations and workflow state (`InboxCountStruct`,
+>   `ApplyTrainingSelectionStruct`).
+> - **Required for v0.1 (design in progress):** the top-level
+>   `Certification` class, person/identity primitives
+>   (`AddressStruct`, `NameStruct`, `IdentityStruct`), and
+>   certifying-agency / cert-type catalog modeling. These are inside
+>   the v0.1 scope commitment — v0.1 cannot be released without them.
+>   See `schemas/README.md` → "Required for v0.1 (design in progress)"
+>   for the authoritative scope statement.
+> - **Scoring reclassified as core:** `TaskbookEvaluationConfigStruct`
+>   (Stage 2: gray-area), `TaskbookScoringConfigStruct`, and
+>   `TaskbookScoringSummaryStruct` (Stage 2: excluded as proprietary)
+>   were promoted to core standard types. See the individual rows for
+>   their published names in v0.1.
+> - **Consolidated enums:** `CertificationDurationUnits` and
+>   `ReportExpiringUnits` were superseded by a single unified
+>   `TimeUnit` enum in v0.1.
+> - **Promoted to constant:** `setNeverExpireDate` became the
+>   published sentinel `neverExpireDate`; see
+>   `schemas/constants.md`.
+>
+> The rows below retain their original Stage 2 categorization for
+> historical reference.
+
 Source repos (read-only reference material):
 
 - `_sources/certlocker/` @ `7ce3a2bd7f37c29d0415c8bc3d1a8c22ef439099`
@@ -120,9 +159,9 @@ cover the TaskBook-specific additions.
 | `StartAndEndTimesStruct` | `backend/schema/structs/start_and_end_times_struct.dart` | Class | INCLUDE | startAt + endAt pair for activities |
 | `TaskTypeConfigStruct` | `backend/schema/structs/task_type_config_struct.dart` | Class | INCLUDE | Polymorphic container: evaluationConfig, taskbookConfig, skillsheetConfig, certConfig |
 | `TaskTypeEvaluationConfigStruct` | `backend/schema/structs/task_type_evaluation_config_struct.dart` | Class | INCLUDE | Evaluation-specific task config |
-| `TaskbookEvaluationConfigStruct` | `backend/schema/structs/taskbook_evaluation_config_struct.dart` | Class | GRAY AREA | Nests proprietary scoring config; strip scoring fields to make portable |
-| `TaskbookScoringConfigStruct` | `backend/schema/structs/taskbook_scoring_config_struct.dart` | Class | EXCLUDE | Proprietary scoring system |
-| `TaskbookScoringSummaryStruct` | `backend/schema/structs/taskbook_scoring_summary_struct.dart` | Class | EXCLUDE | Proprietary scoring output |
+| `TaskbookEvaluationConfigStruct` | `backend/schema/structs/taskbook_evaluation_config_struct.dart` | Class | INCLUDE | Stage 2 marked this gray-area pending a scoring decision. Stage 3 resolved scoring as core to the standard — published in v0.1 as `TaskbookEvaluationConfig` (book-level `scoring_mode` + threshold). |
+| `TaskbookScoringConfigStruct` | `backend/schema/structs/taskbook_scoring_config_struct.dart` | Class | INCLUDE | Stage 2 excluded as proprietary. Stage 3 reversed: scoring is core. Published as `BookScoringConfig` (nested in `TaskbookEvaluationConfig`) and `SectionScoringConfig` (on `TaskbookSection`). |
+| `TaskbookScoringSummaryStruct` | `backend/schema/structs/taskbook_scoring_summary_struct.dart` | Class | INCLUDE | Stage 2 excluded as proprietary. Stage 3 reversed. Published as `BookScoringSummary` (on `TaskbookSummary`) and `SectionScoringSummary` (on `TaskbookSection`), derived by `computeStatus` at each level. |
 | `TaskTypes` enum | `backend/schema/enums/enums.dart` | Enum | INCLUDE | task, evaluation, taskbook, skillsheet, cert |
 | `TaskbookTypes` enum | `backend/schema/enums/enums.dart` | Enum | INCLUDE | TaskBook, SkillSheet |
 | `AppMode` enum | `backend/schema/enums/enums.dart` | Enum | GRAY AREA | view/edit/work — arguably UI state |

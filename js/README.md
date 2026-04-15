@@ -10,8 +10,8 @@ with the schema, the schema wins and the code is the bug.
 ## Scope
 
 Reference implementation, not a published npm package. Copy into your
-own Node / Cloud Functions project as needed. Every class is a plain
-value object with no Firebase or Firestore dependencies.
+own project as needed. Every class is a plain value object. No
+external dependencies; standard library only.
 
 Target runtime: Node 18+.
 
@@ -58,9 +58,10 @@ const recomputed = book._with({
 
 ## Purity contract
 
-Every exported function is pure: no Firestore, no HTTP, no filesystem.
-All I/O must happen in the caller (fetch training records, resolve org
-memberships) and the results passed in as arguments.
+Every exported function is pure: no I/O, no HTTP, no filesystem. When
+a computation needs data from outside the receiver, the caller fetches
+it and passes it in as an argument (see `SignoffPolicy#isEligible`
+and `calculateCertificationProgress`).
 
 ## Immutability
 
@@ -70,4 +71,5 @@ present) to produce modified copies.
 
 ## Serialization
 
-Intentionally not included. Bring your own wire-format mapping.
+Intentionally not included. The standard does not prescribe a wire
+format; host applications supply their own mapping.

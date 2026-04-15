@@ -41,7 +41,8 @@ Identical shape to `TaskbookAssignee`.
 
 ## Notes
 
-- The source structs use `DocumentReference` for `userRef` / `orgRef`.
-  OpenQual replaces these with opaque string IDs.
-- `display_name` is captured at assignment time so the UI can render
-  assignment history without joining to live user/org records.
+- `user_ref` and `org_ref` are opaque string IDs. Resolution to the
+  referenced entity is the host application's responsibility.
+- `display_name` is captured at assignment time so implementations can
+  render assignment history without re-resolving the user or org
+  reference.

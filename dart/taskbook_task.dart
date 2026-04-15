@@ -132,7 +132,7 @@ class TaskbookTask {
     final result = typeConfig?.evaluationConfig?.result;
     final criteria = typeConfig?.evaluationConfig?.criteria;
     if (result == null || criteria == null) return this;
-    if (criteria.evaluationType != 'scored') return this;
+    if (criteria.evaluationType != EvaluationType.scored) return this;
     final possible = criteria.pointsPossible ?? 0.0;
     final awarded = result.pointsAwarded ?? 0.0;
     if (awarded <= possible) return this;

@@ -62,10 +62,50 @@ so clients can render dashboards without walking the full tree.
 | `effective_threshold_points` | `double?` | No | Book-level threshold in points (from `TaskbookEvaluationConfig`). |
 | `effective_threshold_percentage` | `double?` | No | Book-level threshold as a fraction of `points_possible`. |
 
+## Recomputation contract
+
+`TaskbookSummary` is a pure function of the computed tree. For any
+`Taskbook` whose sections and tasks have been passed through
+`TaskbookSection.computeStatus` and `TaskbookTask.computeStatus`:
+
+**Status histograms.** For each `WorkItemStatus` value `S`:
+
+- `tasks_<S>` equals the count of tasks across all sections whose
+  `status = S`.
+- `sections_<S>` equals the count of sections whose `status = S`.
+
+`tasks_total` equals the sum of all `tasks_<S>` values.
+`sections_total` equals the sum of all `sections_<S>` values.
+
+**Book-level flags.** `taskbook_owner_action_needed = true` iff the
+book's computed `status = owner_action_needed`.
+
+**Signoff totals.**
+
+- `signoffs_required_total` = count of all `SignoffPolicy` instances
+  across the book (`Taskbook.signoff_policy`), every section
+  (`TaskbookSection.signoff_policy_override`), and every task
+  (`TaskbookTask.signoff_policy_override`).
+- `signoffs_completed_total` = count of those policies with
+  `completed = true`.
+
+**Scoring summary.** `scoring_summary` is populated whenever the book
+contains at least one scored evaluation task. Its `points_possible`,
+`points_awarded`, and `points_remaining` are raw sums across every
+scored evaluation task in the book, regardless of any section's
+pass/fail state. Threshold fields are populated only when
+`evaluation_config.scoring_mode = aggregated` and
+`evaluation_config.scoring_config` defines a threshold; see
+`taskbook_evaluation_config.md` for the derivation.
+
+**Recompute trigger.** Implementations that cache `TaskbookSummary`
+must recompute on any write that changes a task's or section's
+`status`, a section's or task's `signoff_policy_override`, the book's
+`signoff_policy`, any policy's `completed` flag, or the book's
+`completion`. `last_modified` is set to the recomputation time.
+
 ## Notes
 
 - The tense in summary field names is normalized: `tasks_complete`
   (not `tasks_completed`) and `sections_complete` (not
   `sections_completed`), matching the `WorkItemStatus` enum value name.
-- Implementations that cache `TaskbookSummary` must recompute on every
-  write to any tree node.

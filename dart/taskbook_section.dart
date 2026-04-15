@@ -96,7 +96,8 @@ class TaskbookSection {
     // Scoring aggregation over scored evaluations.
     final scoredTasks = computedTasks.where((t) {
       final c = t.typeConfig?.evaluationConfig?.criteria;
-      return t.type == TaskTypes.evaluation && c?.evaluationType == 'scored';
+      return t.type == TaskTypes.evaluation &&
+          c?.evaluationType == EvaluationType.scored;
     }).toList();
 
     final pointsPossible = scoredTasks.fold<double>(
