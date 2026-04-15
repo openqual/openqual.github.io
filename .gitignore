@@ -1,0 +1,18 @@
+# macOS
+.DS_Store
+
+# Claude Code working instructions — internal only
+CLAUDE.md
+CANDIDATE_INVENTORY.md
+
+# Dart/Flutter tooling (if generated)
+.dart_tool/
+.packages
+
+# Node/JS tooling (if generated)
+node_modules/
+npm-debug.log*
+
+# Environment files
+.env
+.env.*
