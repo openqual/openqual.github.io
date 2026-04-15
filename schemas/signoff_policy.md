@@ -108,5 +108,6 @@ or mark the policy as unsigned.
 - `org_officers` and `org_admins`, observed in the source eligibility
   function, are **not** first-class policy types in v0.1. A policy that
   restricts signing to officers or admins of an org should use
-  `type = org_members` with `allowed_roles = ["officer"]` or
-  `allowed_roles = ["admin"]`.
+  `type = org_members` with `allowed_roles = [OrgRoles.officer]` or
+  `allowed_roles = [OrgRoles.admin]`. Values in `allowed_roles` must
+  come from the `OrgRoles` enum.

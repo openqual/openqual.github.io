@@ -41,7 +41,9 @@ class SignoffPolicy {
   /**
    * @param {string} userId
    * @param {string} taskbookOwnerId
-   * @param {Object<string, string[]>} orgMemberships map from orgId to list of OrgRoles values
+   * @param {Object<string, Array<'admin'|'officer'|'member'>>} orgMemberships
+   *   Map from orgId to the list of OrgRoles values the user holds in that org.
+   *   Array values must come from the OrgRoles enum; arbitrary strings are not accepted.
    * @returns {boolean}
    */
   isEligible(userId, taskbookOwnerId, orgMemberships) {
