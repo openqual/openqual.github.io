@@ -30,6 +30,7 @@ class Certification {
   final DateTime? expirationDate;
   final String? issuedCertId;
   final String? issuingLocality;
+  final String? issuingTimezone;
   final CertStatus? status;
   final PersonSnapshot? instructor;
   final Attachment? certDocument;
@@ -47,6 +48,7 @@ class Certification {
     this.expirationDate,
     this.issuedCertId,
     this.issuingLocality,
+    this.issuingTimezone,
     this.status,
     this.instructor,
     this.certDocument,
@@ -61,20 +63,44 @@ class Certification {
   ///
   /// See schemas/certification.md for the full rule. Summary:
   ///   1. status in {revoked, suspended, expired} -> false
-  ///   2. certification_date in future -> false
+  ///   2. certification_date day in future -> false
   ///   3. no expiration or lifetime -> true
-  ///   4. now before expiration -> true, else false
+  ///   4. today <= expiration day -> true, else false
+  ///
+  /// Comparisons happen at day granularity. The reference implementation
+  /// evaluates in UTC (step 2 of the timezone cascade in
+  /// schemas/certification.md). Implementers with timezone libraries
+  /// can override this method to honor [issuingTimezone] (step 1 of
+  /// the cascade) when present.
   bool isCurrentlyValid(DateTime now) {
     if (status == CertStatus.revoked ||
         status == CertStatus.suspended ||
         status == CertStatus.expired) {
       return false;
     }
-    if (certificationDate != null && now.isBefore(certificationDate!)) {
-      return false;
+    // Sentinel check on raw DateTime before any conversion.
+    if (expirationDate != null && expirationDate == neverExpireDate) {
+      // Lifetime cert — skip date comparison, but still honor pre-effective.
+      if (certificationDate != null &&
+          _dayUtc(now).isBefore(_dayUtc(certificationDate!))) {
+        return false;
+      }
+      return true;
+    }
+    final today = _dayUtc(now);
+    if (certificationDate != null) {
+      if (today.isBefore(_dayUtc(certificationDate!))) return false;
     }
     if (expirationDate == null) return true;
-    if (expirationDate == neverExpireDate) return true;
-    return now.isBefore(expirationDate!);
+    final expDay = _dayUtc(expirationDate!);
+    return !today.isAfter(expDay); // today <= expDay
+  }
+
+  /// Truncates [dt] to the start of its UTC calendar day. Used by
+  /// [isCurrentlyValid] for day-granularity comparisons under the
+  /// cascade's UTC fallback.
+  DateTime _dayUtc(DateTime dt) {
+    final u = dt.toUtc();
+    return DateTime.utc(u.year, u.month, u.day);
   }
 }

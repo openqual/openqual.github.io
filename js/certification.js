@@ -17,6 +17,15 @@
 const { neverExpireDate, openqualSchemaVersion } = require('./constants');
 const { CertStatus } = require('./enums');
 
+/**
+ * Truncates a Date to the start of its UTC calendar day. Used by
+ * Certification#isCurrentlyValid for day-granularity comparisons
+ * under the cascade's UTC fallback.
+ */
+function _dayUtc(d) {
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+}
+
 class Certification {
   constructor({
     schemaVersion = openqualSchemaVersion,
@@ -26,6 +35,7 @@ class Certification {
     expirationDate = null,
     issuedCertId = null,
     issuingLocality = null,
+    issuingTimezone = null,
     status = null,
     instructor = null,
     certDocument = null,
@@ -42,6 +52,7 @@ class Certification {
     this.expirationDate = expirationDate;
     this.issuedCertId = issuedCertId;
     this.issuingLocality = issuingLocality;
+    this.issuingTimezone = issuingTimezone;
     this.status = status;
     this.instructor = instructor;
     this.certDocument = certDocument;
@@ -58,9 +69,14 @@ class Certification {
    *
    * See schemas/certification.md for the full rule. Summary:
    *   1. status in {revoked, suspended, expired} -> false
-   *   2. certification_date in future -> false
+   *   2. certification_date day in future -> false
    *   3. no expiration or lifetime -> true
-   *   4. now before expiration -> true, else false
+   *   4. today <= expiration day -> true, else false
+   *
+   * Comparisons happen at day granularity. The reference implementation
+   * evaluates in UTC (step 2 of the timezone cascade in
+   * schemas/certification.md). Implementers with timezone libraries can
+   * override to honor issuingTimezone (step 1 of the cascade) when present.
    *
    * @param {Date} now
    * @returns {boolean}
@@ -71,10 +87,22 @@ class Certification {
         this.status === CertStatus.EXPIRED) {
       return false;
     }
-    if (this.certificationDate != null && now < this.certificationDate) return false;
+    // Sentinel check on raw Date before any conversion.
+    if (this.expirationDate != null &&
+        this.expirationDate.getTime() === neverExpireDate.getTime()) {
+      if (this.certificationDate != null &&
+          _dayUtc(now) < _dayUtc(this.certificationDate)) {
+        return false;
+      }
+      return true;
+    }
+    const today = _dayUtc(now);
+    if (this.certificationDate != null) {
+      if (today < _dayUtc(this.certificationDate)) return false;
+    }
     if (this.expirationDate == null) return true;
-    if (this.expirationDate.getTime() === neverExpireDate.getTime()) return true;
-    return now < this.expirationDate;
+    const expDay = _dayUtc(this.expirationDate);
+    return today <= expDay;
   }
 }
 

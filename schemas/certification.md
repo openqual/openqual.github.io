@@ -19,7 +19,8 @@ rationale.
 | `certification_date` | `DateTime?` | No | When the certification was earned / issued. |
 | `expiration_date` | `DateTime?` | No | When the certification expires. May be `neverExpireDate` for lifetime certs. Null means expiration is unknown or not applicable. |
 | `issued_cert_id` | `String?` | No | The certificate number or ID printed on the physical credential. |
-| `issuing_locality` | `String?` | No | Where the certification was issued, e.g. "Denver, CO" or "State of Colorado". Free-form string. |
+| `issuing_locality` | `String?` | No | Where the certification was issued, e.g. "Denver, CO" or "State of Colorado". Free-form display string. |
+| `issuing_timezone` | `String?` | No | IANA timezone identifier for the issuing jurisdiction, e.g. `"America/Denver"`. Used by `isCurrentlyValid` to anchor day-granularity comparisons. See "Calendar date semantics" below. |
 | `status` | `CertStatus?` | No | Administrative status. When set to `revoked`, `suspended`, or `expired`, the certification is not currently valid regardless of dates. Omit or set to `active` when no administrative invalidity applies. See "Status and validity" below. |
 | `instructor` | `PersonSnapshot?` | No | Frozen identity of the instructor who conducted the training or examination. |
 | `cert_document` | `Attachment?` | No | The digitized certification itself — a PDF, image, or scan of the actual credential. Distinct from supplementary `attachments`. |
@@ -36,22 +37,84 @@ rationale.
 Pure. Returns `true` iff the certification is considered valid at the
 given instant.
 
+Comparisons for `certification_date` and `expiration_date` happen at
+**day granularity** in the jurisdictional timezone resolved by the
+cascade in "Calendar date semantics" below. Let `today` denote the
+calendar date of `now` in that timezone; let `cert_day` and `exp_day`
+denote the calendar dates of `certification_date` and `expiration_date`
+in the same timezone.
+
 Logic:
 1. If `status` is `revoked`, `suspended`, or `expired` → `false`
    (administrative or explicit invalidity overrides date logic).
-2. If `certification_date` is non-null and `now < certification_date`
-   → `false` (cert has not yet taken effect).
+2. If `certification_date` is non-null and `today < cert_day` → `false`
+   (cert has not yet taken effect).
 3. If `expiration_date` is null → `true` (no expiration known; assume
    valid).
 4. If `expiration_date` equals `neverExpireDate` → `true` (lifetime
-   cert).
-5. If `now < expiration_date` → `true`.
+   cert). Sentinel equality is checked on the raw `DateTime` before
+   any timezone conversion.
+5. If `today <= exp_day` → `true` (valid through end of the
+   expiration day).
 6. Otherwise → `false` (date-based expiration).
 
 `status = active` and `status = null` behave identically: both fall
 through to the date-based evaluation. `status = active` is an
 explicit affirmation, but it does not override a past
 `expiration_date`.
+
+## Calendar date semantics (normative)
+
+`certification_date` and `expiration_date` are **calendar dates**
+tied to an issuing jurisdiction, not UTC instants. A certification
+with `expiration_date` of March 15 is valid through the entire day of
+March 15 in that jurisdiction — not invalid the instant 2026-03-15
+UTC rolls around.
+
+**Serialization.** These fields MAY be written either as:
+
+- An ISO 8601 date string: `"2026-03-15"`.
+- A full `DateTime` fixed to `00:00:00 UTC` on the named day:
+  `"2026-03-15T00:00:00Z"`.
+
+Receivers MUST accept both forms and normalize to the day for
+comparison purposes. Producers SHOULD prefer the ISO date string
+when their serialization format supports it.
+
+**Timezone resolution — the cascade.** `isCurrentlyValid` converts
+`now` to the jurisdictional calendar day using this ordered cascade:
+
+1. If `issuing_timezone` is present and resolvable to an IANA
+   timezone, use it.
+2. Otherwise, use UTC.
+
+The cascade is deterministic: every standards-compliant
+implementation evaluating `isCurrentlyValid` against the same record
+at the same instant MUST produce the same result. This is the
+load-bearing property for interoperability — receivers cannot
+diverge on whether a given cert is currently valid.
+
+**Comparison rule.** `expiration_date` represents the last valid day,
+inclusive. The cert is valid when `today <= exp_day`. Similarly,
+`certification_date` represents the first effective day, inclusive —
+the cert is not yet effective when `today < cert_day`.
+
+**Implementer flexibility beyond the cascade.** Implementers MAY
+offer additional timezone-resolution strategies as UX conveniences
+(viewer's device timezone, tenant default, automatic resolution from
+`issuing_locality` via a geocoding table, etc.). These MUST be
+labeled as presentation-layer choices; the **standard's
+authoritative** `isCurrentlyValid` always uses the two-step cascade
+above. This allows richer UX without compromising cross-implementation
+agreement on validity.
+
+**Reference implementations.** The reference `dart/` and `js/`
+implementations are standard-library-only and do not perform
+arbitrary IANA timezone conversion. They implement step 2 of the
+cascade (UTC) correctly and fall back to UTC when `issuing_timezone`
+is present but cannot be resolved without external dependencies.
+Implementers deploying into production SHOULD add timezone handling
+(e.g., via a runtime timezone library) to honor step 1 of the cascade.
 
 ## Status and validity (normative)
 

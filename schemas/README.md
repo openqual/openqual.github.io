@@ -432,9 +432,17 @@ certifying agencies — is planned for v0.2. See Roadmap below.
   (Dart/JS: `camelCase`).
 - **IDs:** all IDs are opaque strings. The standard does not prescribe
   any particular ID generation scheme.
-- **Timestamps:** all timestamps are absolute points in time (UTC). In
-  the spec they are typed `DateTime`; language bindings use `DateTime`
-  (Dart) and `Date` (JS).
+- **Timestamps:** absolute points in time (UTC). In the spec they are
+  typed `DateTime`; language bindings use `DateTime` (Dart) and
+  `Date` (JS).
+- **Calendar dates:** a distinct semantic category that uses the same
+  `DateTime` type but represents a calendar day in an issuing
+  jurisdiction rather than an instant. `Certification.certification_date`
+  and `Certification.expiration_date` are the v0.1 examples.
+  Serialized as `YYYY-MM-DD` or `DateTime` at `00:00:00 UTC` on the
+  named day; receivers MUST accept both. Comparisons happen at day
+  granularity via a deterministic timezone cascade. See
+  `certification.md` → "Calendar date semantics" for the full contract.
 - **Optional fields:** a `?` suffix on a type means nullable/optional.
   Implementations must accept missing or null values for these fields.
 - **Required fields:** everything without a `?` is required. When a
