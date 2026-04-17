@@ -14,8 +14,10 @@
 
 import 'source.dart';
 
-/// Portable representation of an authority that issues certifications.
-class CertifyingAgency {
+/// Frozen point-in-time capture of an organization's identity and
+/// contact details. Reusable across slots where a portable record
+/// references an organization (certifying agency, host org, etc.).
+class OrganizationSnapshot {
   final String name;
   final String? displayName;
   final String? website;
@@ -23,7 +25,7 @@ class CertifyingAgency {
   final String? phone;
   final Source? source;
 
-  const CertifyingAgency({
+  const OrganizationSnapshot({
     required this.name,
     this.displayName,
     this.website,

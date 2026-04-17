@@ -7,14 +7,16 @@ recorded at the top for history.
 ## Release blockers for v0.1 — resolved
 
 All three v0.1 release blockers are now resolved. The following classes
-are published: `Certification`, `CertType`, `CertifyingAgency`,
+are published: `Certification`, `CertType`, `OrganizationSnapshot`,
 `PersonSnapshot`, and `Source`.
 
 - **Top-level `Certification` class.** Resolved — published.
 - **Identity and contact primitives.** Resolved — `PersonSnapshot` and
   `Source` are published.
 - **Certifying-agency and cert-type modeling.** Resolved — `CertType`
-  and `CertifyingAgency` are published.
+  and `OrganizationSnapshot` are published (the latter fills the
+  certifying-agency slot on `CertType` and is reusable for other
+  organization-shaped slots).
 
 ## Community input requested
 

@@ -16,8 +16,12 @@
 
 const { Source } = require('./source');
 
-/** Portable representation of an authority that issues certifications. */
-class CertifyingAgency {
+/**
+ * Frozen point-in-time capture of an organization's identity and
+ * contact details. Reusable across slots where a portable record
+ * references an organization (certifying agency, host org, etc.).
+ */
+class OrganizationSnapshot {
   constructor({
     name,
     displayName = null,
@@ -36,4 +40,4 @@ class CertifyingAgency {
   }
 }
 
-module.exports = { CertifyingAgency };
+module.exports = { OrganizationSnapshot };

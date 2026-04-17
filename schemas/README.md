@@ -1,17 +1,54 @@
 # OpenQual Schemas — v0.1
 
+OpenQual is an open standard for documenting and exchanging qualification
+records — the credentials, skills, and demonstrated competencies that
+prove a person is ready to do the work.
+
 **Version:** 0.1
 **License:** Apache 2.0
 **Copyright:** FireCal LLC
 
 This directory contains the authoritative language-agnostic specification
-for the OpenQual standard. Each `.md` file defines the fields, types, and
-methods of one portable class (or a small family of closely-related
-classes). Implementations in `../dart/` and `../js/` conform to these
-specs.
+for OpenQual. Each `.md` file defines the fields, types, and methods of
+one portable class (or a small family of closely-related classes).
+Implementations in `../dart/` and `../js/` conform to these specs.
 
 If an implementation differs from a spec, the spec is correct and the
 implementation is the bug.
+
+## Why OpenQual exists
+
+Today, qualification records for first responders live scattered across
+paper binders, vendor-locked apps, and siloed agency databases. A
+firefighter who changes departments re-enters credentials by hand; a
+department that switches software often strands its training history;
+an incident commander verifying credentials across mutual-aid responders
+has no common format to consult. JSON exports alone cannot solve this —
+every application means different things by its fields, and without a
+shared vocabulary for status, provenance, and validity, receivers cannot
+reliably interpret what they receive.
+
+Two forces make this more urgent. First, market consolidation in
+emergency-services software has repeatedly left small departments
+stranded: affordable tools they rely on are acquired, wound down, or
+folded into larger platforms, and customers must migrate under time
+pressure or lose access to their own records. A portable standard is a
+department's safeguard against that outcome — and a signal to every
+vendor, large or small, that customer data portability is table stakes.
+Second, AI-assisted development is lowering the cost of building
+credentialing software to the point where small new entrants — and
+eventually ambitious champions inside departments — will increasingly
+ship their own solutions; that is healthy for the market, but without a
+shared standard to anchor the ecosystem, it accelerates fragmentation
+rather than relieving it.
+
+OpenQual is that shared standard — a portable, self-contained record
+format that centers the responder as the holder of their own
+qualifications. Those qualifications travel with them across
+departments, agencies, and systems, and accumulate over a career that
+may span decades, from a first certification through the expert,
+officer, and administrator roles they grow into. The ecosystem, in
+turn, has a common reference point as it grows around them.
 
 ## The OpenQual Principle
 
@@ -61,9 +98,11 @@ using v0.1 alone.
    signoff policies, assignment, attachments, and the evaluation config
    that drives book-, section-, and task-level status computation.
 2. **Certification and credentialing** — the top-level `Certification`
-   class, `CertType`, `CertifyingAgency`, `PersonSnapshot` for holder
-   and instructor identity, and the `Attachment` type with inline
-   content support for portable credential documents.
+   class, `CertType`, `OrganizationSnapshot` (fills the certifying-agency
+   slot and is reusable across organization-shaped slots),
+   `PersonSnapshot` for holder and instructor identity, and the
+   `Attachment` type with inline content support for portable credential
+   documents.
 3. **Certification renewal** — renewal requirements/components, progress
    tracking, and archived renewals.
 4. **Shared types, constants, and source attribution** —
@@ -91,6 +130,27 @@ not prescribe their shape:
 - **In-app aggregations and workflow state** —
   (`InboxCountStruct`, `ApplyTrainingSelectionStruct`).
 
+### Out of scope (different domain)
+
+OpenQual is about person qualification. It does not model:
+
+- **Asset and equipment records** — apparatus maintenance logs,
+  inventory, PPE inspection, pump testing, or any other equipment-side
+  data. These are a related but distinct domain and belong in separate
+  future projects.
+- **Operational workflows** — incident reporting, dispatch, CAD
+  integration, response data, or post-incident analysis. These overlap
+  with qualification data at the margins (e.g. incidents where a
+  responder exercised a skill) but have their own data standards and
+  governance needs.
+- **Agency-level asset or readiness tracking** — department-level ISO
+  ratings, apparatus readiness, station staffing analytics. These are
+  operational concerns, not qualification concerns.
+
+Implementations may extend OpenQual with adjacent-domain records, but
+the qualification standard proper is bounded to the person as the core
+subject.
+
 ### Deferred to later versions
 
 See the Roadmap section below for items that are intentionally out of
@@ -104,6 +164,7 @@ v0.1.
 |------|------|---------|
 | `Source` | [source.md](source.md) | Source attribution (provenance) for portable data. |
 | `PersonSnapshot` | [person_snapshot.md](person_snapshot.md) | Frozen point-in-time identity capture for any person reference. |
+| `OrganizationSnapshot` | [organization_snapshot.md](organization_snapshot.md) | Frozen organization identity + contact. Used for certifying agency, host org, and other organization-shaped slots. |
 | `Attachment` | [attachment.md](attachment.md) | File attached to any node; supports inline content for portability. |
 | `ValidityPeriod` | [validity_period.md](validity_period.md) | Duration + time unit pair. |
 | `CompletionState` | [completion_state.md](completion_state.md) | Unified completion marker used at every hierarchy level. |
@@ -116,7 +177,6 @@ v0.1.
 |------|------|---------|
 | `Certification` | [certification.md](certification.md) | Top-level portable certification — holder, cert type, agency, validity, renewal progress, credential document. |
 | `CertType` | [cert_type.md](cert_type.md) | Portable definition of a certification type — discipline, level, validity period, renewal requirements. |
-| `CertifyingAgency` | [certifying_agency.md](certifying_agency.md) | Authority that issues certifications. |
 
 ### TaskBook hierarchy
 
@@ -313,7 +373,21 @@ holds no role.
 
 ## Organizations in the standard
 
-The standard references organizations by opaque ID — for example, via
+Organizations appear in the standard in two forms.
+
+**As `OrganizationSnapshot`.** For any slot where a portable record
+needs to identify an organization by name, contact, and provenance —
+today, this is `CertType.certifying_agency`, and the pattern extends
+to other organization-shaped slots as the standard develops.
+`OrganizationSnapshot` is snapshot-shaped: it captures identity at a
+point in time and does not model the organization's own lifecycle,
+subunits, or membership. Different kinds of organizations (certifying
+agencies, employing departments, mutual-aid partners, etc.) share the
+same struct; implementers encode kind distinctions via
+`source.canonical_source` when their catalog distinguishes them. See
+`organization_snapshot.md` and `source.md`.
+
+**As opaque IDs.** For eligibility evaluation — via
 `SignoffPolicy.allowed_orgs`. v0.1 does not publish an `Organization`
 class or prescribe how orgs are stored, how users join or leave, or
 how pending / invited / accepted membership states are modeled.
@@ -355,11 +429,11 @@ certifying agencies — is planned for v0.2. See Roadmap below.
 Planned expansions to the standard in later versions. See "Scope of
 v0.1" above for the full deferred / out-of-scope split.
 
-- **Organization modeling** — a portable `Organization` class, the
-  membership lifecycle (invited, requested, accepted), subunits such
-  as stations, and the distinction between employing organizations
-  and certifying agencies. v0.1 treats orgs as opaque references
-  (see "Organizations in the standard" above). Planned for v0.2.
+- **Organization lifecycle modeling** — a richer `Organization` class
+  layered on top of `OrganizationSnapshot`, the membership lifecycle
+  (invited, requested, accepted), and subunits such as stations.
+  v0.1 publishes `OrganizationSnapshot` as the snapshot-shaped portable
+  identity type; v0.2 adds the lifecycle and membership layer.
 - **Additional `RequirementUnits`** (CE credits, sessions, contact
   hours). The current `hours`-only set will expand once the target
   disciplines' measurement conventions are agreed.

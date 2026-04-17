@@ -25,7 +25,7 @@ for the design rationale.
 | `standard_code` | `String?` | No | Reference standard the cert type is built against, e.g. "NFPA 1081". |
 | `standard_edition` | `String?` | No | Edition or section of the reference standard, e.g. "2007-7, 2012-7". |
 | `renewal_requirements` | `RenewalRequirements?` | No | Versioned renewal criteria for this cert type. Uses the existing `RenewalRequirements` type from the renewal slice. Null when the cert type has no structured renewal requirements (e.g. lifetime certs or certs renewed by re-examination only). |
-| `certifying_agency` | `CertifyingAgency?` | No | The authority that issues this cert type. Embedded as a snapshot for self-containment. |
+| `certifying_agency` | `OrganizationSnapshot?` | No | The authority that issues this cert type. Embedded as a snapshot for self-containment. See `organization_snapshot.md`. |
 | `source` | `Source?` | No | Source attribution for this cert-type definition. |
 
 ## Notes

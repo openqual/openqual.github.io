@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import 'certifying_agency.dart';
 import 'enums.dart';
+import 'organization_snapshot.dart';
 import 'renewal_requirements.dart';
 import 'source.dart';
 import 'validity_period.dart';
@@ -32,7 +32,7 @@ class CertType {
   final String? standardCode;
   final String? standardEdition;
   final RenewalRequirements? renewalRequirements;
-  final CertifyingAgency? certifyingAgency;
+  final OrganizationSnapshot? certifyingAgency;
   final Source? source;
 
   const CertType({

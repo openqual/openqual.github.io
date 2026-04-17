@@ -13,7 +13,34 @@ rationale.
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `canonical_id` | `String?` | No | Opaque identifier of this record in the source system or catalog. |
-| `canonical_source` | `String?` | No | Opaque identifier of the source system or catalog itself. |
+| `canonical_source` | `String?` | No | Opaque identifier of the source system or catalog itself. See below for the range of forms this string can take. |
+
+## The `canonical_source` string
+
+`canonical_source` is deliberately a free-form string. The standard
+does not prescribe a format. Implementers choose the level of
+granularity that makes sense for their catalog, including encoding
+type or collection distinctions directly in the string.
+
+Examples of valid `canonical_source` values:
+
+- `"firecal_catalog"` — a simple identifier naming the source system.
+- `"firecal_catalog:certifying_agencies"` — a scoped identifier
+  distinguishing collections within a single source system.
+- `"https://catalog.example.com/api/certifying_agencies"` — a
+  resource-scoped URL. A receiving system that knows this catalog can
+  combine `canonical_source` + `canonical_id` to resolve the record.
+- `"https://catalog.example.com/api/departments"` — a different
+  collection in the same catalog. Two `OrganizationSnapshot` values
+  with these two `canonical_source` strings come from meaningfully
+  different kinds of organizations, even though the snapshot struct
+  is the same shape.
+
+This flexibility lets implementers distinguish meaningfully different
+kinds of records (e.g. a certifying agency vs. an employing
+department) without requiring separate OpenQual types for each kind.
+The struct names the shape; `canonical_source` names the catalog-side
+kind when it matters.
 
 ## Provenance inheritance
 
@@ -24,7 +51,7 @@ its own `source` when the specific piece of data came from a
 
 For example, a `Certification` whose `source` points to System A
 does not need `source` repeated on its embedded `CertType` or
-`CertifyingAgency` — unless those were enriched from a different
+`OrganizationSnapshot` — unless those were enriched from a different
 catalog.
 
 ## Multi-source modification (v0.1 behavioral guideline)

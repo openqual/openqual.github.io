@@ -1,8 +1,8 @@
 # OpenQual
 
-**The open qualification data standard for first responders, their agencies, and the equipment they depend on.**
+**An open standard for documenting and exchanging qualification records — the credentials, skills, and demonstrated competencies that prove a person is ready to do the work.**
 
-OpenQual is an open data standard of schemas, data models, and calculation tools that define how qualification data is structured and exchanged in emergency services. It covers individual credentials and certifications, structured taskbooks and skillsheets, equipment readiness records, and agency-level qualification tracking.
+OpenQual is an open data standard of schemas, data models, and calculation tools that define how qualification data is structured and exchanged in emergency services. It covers individual credentials and certifications, and structured taskbooks and skillsheets that document a responder's competencies as they accumulate over a career.
 
 The standard is free, open, and owned by no single vendor. Any department can adopt it. Any developer can build on it. Any system can implement it.
 

@@ -29,7 +29,7 @@ js/
   person_snapshot.js
   attachment.js                     # + inline content for portability
   validity_period.js
-  certifying_agency.js
+  organization_snapshot.js
   cert_type.js
   certification.js                  # + isCurrentlyValid
   taskbook_assignment.js            # + assignee, evaluator, host org

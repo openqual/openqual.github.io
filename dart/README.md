@@ -29,7 +29,7 @@ dart/
   person_snapshot.dart
   attachment.dart                   # + inline content for portability
   validity_period.dart
-  certifying_agency.dart
+  organization_snapshot.dart
   cert_type.dart
   certification.dart                # + isCurrentlyValid
   taskbook_assignment.dart          # + assignee, evaluator, host org
