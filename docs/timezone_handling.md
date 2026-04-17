@@ -155,21 +155,35 @@ for an `Intl.DateTimeFormat`-based or `luxon`-based truncation.
 
 ## Relation to the spec
 
-The two-step cascade is normative. Implementations that resolve
-step 1 are still standards-compliant; they are simply more complete
-than the reference impls. Every standards-compliant implementation
-evaluating `isCurrentlyValid` against the same record at the same
-instant MUST produce the same result. That means:
+The two-step cascade itself is normative — it defines how
+`isCurrentlyValid` derives "today" from a UTC `now`. What the
+cascade does **not** guarantee is that every conformant
+implementation produces the same answer for every record:
 
-- Implementations that implement step 1 agree with each other on
-  tz-known certs.
-- All implementations (step 1 or step 2) agree on tz-unknown certs —
-  both fall back to UTC.
+- **On certs where `issuing_timezone` is null** — all conformant
+  implementations agree, because every implementation falls back
+  to step 2 (UTC).
+- **On certs where `issuing_timezone` is populated** — a
+  step-1-capable implementation produces the authoritative answer
+  per the cascade. A step-2-only implementation is still
+  conformant for the documented fallback case, but its answer may
+  differ from the authoritative answer by up to one day at day
+  boundaries.
 
-The only disagreement window is between a step-1 impl and a
-step-2 impl evaluating a cert whose `issuing_timezone` *is*
-populated. The step-2 impl is still conformant — it is using the
-cascade's defined fallback — but its answer may differ by up to one
-day from the step-1 impl at day boundaries. Production adopters
-with non-UTC certs should treat this as a correctness bug in their
-deployment and add step 1.
+In other words, the cascade is deterministic, but conformance
+below step 1 is a hedged conformance: fine for day-to-day
+evaluation of records with null `issuing_timezone`, explicitly
+acceptable for reference implementations in constrained
+environments, and materially wrong for production use on records
+that do carry a timezone.
+
+Two practical implications:
+
+- **Reference implementations are honest fallbacks, not drop-in
+  production evaluators.** `dart/` and `js/` implement step 2
+  correctly; they document the step-1 gap; that is the extent of
+  their conformance claim.
+- **Production adopters with non-UTC certs should treat step-1
+  absence as a correctness bug in their deployment.** Adding a
+  timezone library and honoring `issuing_timezone` is the path to
+  the authoritative answer.

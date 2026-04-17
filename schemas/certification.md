@@ -103,11 +103,18 @@ when their serialization format supports it.
    timezone, use it.
 2. Otherwise, use UTC.
 
-The cascade is deterministic: every standards-compliant
-implementation evaluating `isCurrentlyValid` against the same record
-at the same instant MUST produce the same result. This is the
-load-bearing property for interoperability — receivers cannot
-diverge on whether a given cert is currently valid.
+The cascade itself is normative: it defines how "today" is
+derived. An implementation that honors step 1 when
+`issuing_timezone` is populated produces the authoritative answer,
+and any two such implementations evaluating the same record at the
+same instant MUST produce the same result. An implementation that
+cannot honor step 1 (e.g., the standard-library-only reference
+implementations) is conformant for the documented step-2 fallback
+case, MUST document the limitation, and may disagree with step-1
+implementations by up to one day at day boundaries on
+tz-populated records. See
+[`docs/timezone_handling.md`](../docs/timezone_handling.md) for
+production guidance.
 
 **Comparison rule.** `expiration_date` represents the last valid day,
 inclusive. The cert is valid when `today <= exp_day`. Similarly,
