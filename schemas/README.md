@@ -502,6 +502,144 @@ publishes additional types intended to be exchanged as independent
 root records, those types will also carry `schema_version` on the
 same terms.
 
+## Conformance
+
+OpenQual v0.1 has a **single conformance level** — no tiers. This
+section defines what an implementation MUST do, SHOULD do, and MAY
+do to be considered conformant. Vocabulary follows RFC 2119.
+
+Implementations play one or both of two roles:
+
+- **Producer** — emits OpenQual records for another system to consume
+  (serializes a `Certification`, `Taskbook`, etc.).
+- **Receiver** — accepts OpenQual records from another system
+  (deserializes and uses them).
+
+A single application may be both. Each role has its own bar.
+
+### Producer requirements
+
+**A Producer MUST:**
+
+- Populate `schema_version` on every top-level portable record it
+  emits (`Certification`, `Taskbook`).
+- Populate every field marked "Required" in the spec for the record
+  types it emits.
+- Restrict enum-typed fields to values published in the standard's
+  enums. Producers MUST NOT emit arbitrary strings in enum slots.
+- Serialize calendar-date fields (`Certification.certification_date`,
+  `Certification.expiration_date`) as either `YYYY-MM-DD` or
+  `DateTime` at `00:00:00 UTC` on the named day.
+- Write `SignoffRecord` atomically with the corresponding
+  `SignoffPolicy` state transition, per the signing contract in
+  `signoff_policy.md`.
+- Treat snapshot-shaped fields (`PersonSnapshot`,
+  `OrganizationSnapshot`, `SignoffRecord.signatory`,
+  `EarnedViaTaskbook`, and similar) as frozen after initial capture.
+  Producers MUST NOT backfill or mutate these values once written.
+
+**A Producer SHOULD:**
+
+- Populate `source` on portable records when the originating system
+  or catalog is known (see `source.md`).
+- Populate `issuing_timezone` on `Certification` when the issuing
+  jurisdiction has a known IANA timezone (see "Calendar date
+  semantics" in `certification.md`).
+- Populate `cert_document.content` (inline base64) on `Certification`
+  records intended for external exchange, so the credential image
+  travels with the record (see `attachment.md`).
+- Populate `attachment.mime_type` on all attachments.
+
+**A Producer MAY:**
+
+- Omit fields marked "Optional" in the spec.
+- Use either serialization form (ISO date string or UTC-midnight
+  `DateTime`) for calendar-date fields.
+
+### Receiver requirements
+
+**A Receiver MUST:**
+
+- Inspect `schema_version` on every top-level portable record it
+  accepts. Behavior for each case (exact match, unknown or newer,
+  older supported, older unsupported) is defined in "Schema
+  versioning" above.
+- Reject records where a required field is missing.
+- Reject records where an enum-typed field contains a value not in
+  the published enum vocabulary for the version named in
+  `schema_version`, except when the enum has an `other` escape hatch
+  (see SHOULD below).
+- Accept both serialization forms for calendar-date fields and
+  normalize to the day for comparison.
+- Treat snapshot-shaped fields as frozen on read. Receivers MUST NOT
+  set or backfill `Certification.status`,
+  `SignoffRecord.signatory_role`, or any snapshot field on records
+  produced by another system.
+- Treat `neverExpireDate` as a sentinel for "no expiration," not a
+  literal calendar date. Implementations MUST NOT silently round,
+  truncate, or normalize this value to a different instant.
+
+**A Receiver SHOULD:**
+
+- Tolerate unknown optional fields when `schema_version` names a
+  newer MINOR of the same MAJOR as what the receiver supports
+  (forward compatibility within a MAJOR).
+- For enums with an `other` escape hatch (`Discipline`,
+  `CertClassification`), treat unknown values as `other` when
+  `schema_version` names a newer MINOR than the receiver supports.
+- Preserve the original payload for diagnostics when surfacing a
+  validation failure (missing required fields, unknown enums,
+  unsupported `schema_version`).
+
+**A Receiver MAY:**
+
+- Layer implementer-specific features over the standard — richer
+  timezone resolution, catalog enrichment, viewer-specific UX — as
+  long as the standard-defined methods produce the results the
+  standard specifies. Presentation-layer conveniences do not
+  compromise conformance; they are not a substitute for conformant
+  behavior on the standard's methods.
+
+### Method conformance
+
+Some types publish pure computed methods. A conforming implementation
+that exposes these methods MUST produce the results defined in the
+spec:
+
+| Method | Spec | What conformance means |
+|---|---|---|
+| `Certification.isCurrentlyValid(now)` | [certification.md](certification.md) | Returns per "Status and validity" + "Calendar date semantics." UTC-only implementations are conformant for step 2 of the timezone cascade and MUST document the limitation when `issuing_timezone` is populated. |
+| `SignoffPolicy.isEligible(user_id, owner_id, memberships)` | [signoff_policy.md](signoff_policy.md) | Returns per the map-based Methods section and "Matching organizations." |
+| `SignoffPolicy.isEligibleFor(signer, owner)` | [signoff_policy.md](signoff_policy.md) | Returns per the snapshot-based matching rules. |
+| `SignoffPolicy.isValidSigned()` | [signoff_policy.md](signoff_policy.md) | Mechanically checks the invariants of the signing contract. |
+| `Taskbook.computeStatus()` | [taskbook.md](taskbook.md) | Returns per the book-level priority waterfall. |
+| `TaskbookSection.computeStatus()` | [taskbook_section.md](taskbook_section.md) | Returns per the section-level priority waterfall. |
+
+A conforming implementation is **not required to expose every
+method** — a pure-Consumer may not need `computeStatus`, and a
+read-only Receiver may not need `isEligibleFor`. The requirement is
+that when a method is exposed, its behavior matches the spec.
+
+### What is not prescribed
+
+OpenQual v0.1 does not prescribe:
+
+- **Wire format.** Implementations choose JSON, CBOR, Protobuf, or
+  anything else. The standard specifies field names, types, and
+  serialization forms for special cases (calendar dates, inline
+  attachments); the encoding is the implementer's choice.
+- **Storage.** The spec describes what a portable record looks like
+  in flight. Where and how it is persisted is an application concern.
+- **UI.** No conformance expectation regarding how records are
+  displayed.
+- **Identity verification.** Whether a `PersonSnapshot` represents a
+  verified person is a service-layer concern outside the standard.
+- **Catalog protocol.** Implementations may enrich from any catalog
+  (or none). OpenQual does not prescribe how catalog lookups happen
+  or what a catalog's API looks like.
+- **Transport.** No requirement regarding how records move between
+  Producer and Receiver.
+
 ## Roadmap
 
 Planned expansions to the standard in later versions. See "Scope of
