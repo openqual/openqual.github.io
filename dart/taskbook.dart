@@ -30,6 +30,7 @@ import 'taskbook_task.dart';
 
 /// The root container in the TaskBook hierarchy.
 class Taskbook {
+  final String schemaVersion;
   final TaskbookTypes taskbookType;
   final String title;
   final String? description;
@@ -51,6 +52,7 @@ class Taskbook {
   final String? importNotes;
 
   const Taskbook({
+    this.schemaVersion = openqualSchemaVersion,
     this.taskbookType = TaskbookTypes.taskbook,
     required this.title,
     this.description,

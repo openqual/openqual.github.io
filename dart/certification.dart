@@ -22,6 +22,7 @@ import 'source.dart';
 
 /// A portable representation of a person's certification.
 class Certification {
+  final String schemaVersion;
   final PersonSnapshot holder;
   final CertType certType;
   final DateTime? certificationDate;
@@ -37,6 +38,7 @@ class Certification {
   final Source? source;
 
   const Certification({
+    this.schemaVersion = openqualSchemaVersion,
     required this.holder,
     required this.certType,
     this.certificationDate,

@@ -8,6 +8,7 @@ book-level evaluation scoring.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
+| `schema_version` | `String` | Yes | Version of the OpenQual standard this record was produced against. See `constants.md` → `schemaVersion` and `README.md` → "Schema versioning." |
 | `taskbook_type` | `TaskbookTypes` | Yes | Discriminator. Defaults to `taskbook`. |
 | `title` | `String` | Yes | Display name. |
 | `description` | `String?` | No | Prose description. |

@@ -24,4 +24,13 @@
  */
 const neverExpireDate = new Date(Date.UTC(2199, 11, 31));
 
-module.exports = { neverExpireDate };
+/**
+ * Version of the OpenQual standard this implementation supports.
+ *
+ * Top-level portable records (Certification, Taskbook) serialize this
+ * value in their schema_version field. See schemas/constants.md and
+ * schemas/README.md → "Schema versioning" for the versioning contract.
+ */
+const openqualSchemaVersion = '0.1.0';
+
+module.exports = { neverExpireDate, openqualSchemaVersion };

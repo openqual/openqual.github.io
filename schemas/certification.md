@@ -13,6 +13,7 @@ rationale.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
+| `schema_version` | `String` | Yes | Version of the OpenQual standard this record was produced against. See `constants.md` → `schemaVersion` and `README.md` → "Schema versioning." |
 | `holder` | `PersonSnapshot` | Yes | Frozen identity of the certification holder at the time of issuance or last refresh. |
 | `cert_type` | `CertType` | Yes | Embedded snapshot of the cert-type definition — name, discipline, level, validity, renewal requirements, certifying agency. |
 | `certification_date` | `DateTime?` | No | When the certification was earned / issued. |
@@ -60,6 +61,6 @@ other administrative states are not modeled in v0.1; see
   to the originating system's storage. See `attachment.md` → Inline
   content.
 - `instructor` reuses `PersonSnapshot` — the same type as `holder`.
-  A future version of the standard may retroactively apply
-  `PersonSnapshot` to similar person references in the TaskBook
-  hierarchy (signoff signatories, assignment roles).
+  Every person-shaped slot across the standard (holder, instructor,
+  assignee, evaluator, signatory) uses `PersonSnapshot`; the parent
+  field name carries the role.

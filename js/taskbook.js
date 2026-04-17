@@ -15,7 +15,7 @@
 'use strict';
 
 const { CompletionState } = require('./completion_state');
-const { neverExpireDate } = require('./constants');
+const { neverExpireDate, openqualSchemaVersion } = require('./constants');
 const { WorkItemStatus, TaskbookTypes, TaskTypes, EvaluationType, ScoringMode } = require('./enums');
 const { signoffsOK } = require('./signoff_policy');
 const { TaskbookSection } = require('./taskbook_section');
@@ -35,6 +35,7 @@ function _generateId() {
 
 class Taskbook {
   constructor({
+    schemaVersion = openqualSchemaVersion,
     taskbookType = TaskbookTypes.TASKBOOK,
     title,
     description = null,
@@ -55,6 +56,7 @@ class Taskbook {
     importStatus = null,
     importNotes = null,
   }) {
+    this.schemaVersion = schemaVersion;
     this.taskbookType = taskbookType;
     this.title = title;
     this.description = description;

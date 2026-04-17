@@ -14,10 +14,11 @@
 
 'use strict';
 
-const { neverExpireDate } = require('./constants');
+const { neverExpireDate, openqualSchemaVersion } = require('./constants');
 
 class Certification {
   constructor({
+    schemaVersion = openqualSchemaVersion,
     holder,
     certType,
     certificationDate = null,
@@ -32,6 +33,7 @@ class Certification {
     notes = null,
     source = null,
   }) {
+    this.schemaVersion = schemaVersion;
     this.holder = holder;
     this.certType = certType;
     this.certificationDate = certificationDate;

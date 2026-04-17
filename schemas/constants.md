@@ -29,3 +29,18 @@ backend storage layers; `2199-12-31` avoids that class of issue.
 sentinel (rather than a literal calendar date) is expected behavior.
 Implementations must not silently round, truncate, or normalize this
 value to a different instant.
+
+## `schemaVersion`
+
+The string identifying the version of the OpenQual standard a portable
+record was produced against. Every top-level portable record
+(`Certification`, `Taskbook`) MUST carry this value in its
+`schema_version` field; receiving systems use it to decide whether to
+process, reject, or flag a record.
+
+**Value for v0.1:** `"0.1.0"`.
+
+**Format:** `MAJOR.MINOR.PATCH`, as a plain string (semantic
+versioning). MAJOR, MINOR, and PATCH are non-negative integers.
+
+**Receiver behavior** is specified in `README.md` → "Schema versioning."

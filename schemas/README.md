@@ -430,6 +430,56 @@ certifying agencies — is planned for v0.2. See Roadmap below.
   methods are pure functions of the receiver's fields and their
   arguments.
 
+## Schema versioning
+
+Every top-level portable record MUST carry a `schema_version` field
+naming the version of the standard it was produced against.
+
+**Required on:**
+- `Certification` (top-level credential records)
+- `Taskbook` (top-level qualification workflow records)
+
+**Format:** `MAJOR.MINOR.PATCH` as a plain string (semantic
+versioning, e.g. `"0.1.0"`). See `constants.md` → `schemaVersion` for
+the current value.
+
+**Receiver behavior.** When a receiving system encounters a
+`schema_version`:
+
+- **Exact match** (the value equals the version the receiver
+  supports): proceed normally.
+- **Unknown or newer** (the receiver does not recognize the value, or
+  the value is a later version than the receiver supports): the
+  receiver MUST NOT silently process the record. Options: reject with
+  a clear error, or flag the record for review. The receiver MUST NOT
+  assume forward compatibility absent an explicit policy.
+- **Older and supported** (the receiver supports multiple versions
+  including this one): proceed using the rules of the named version.
+- **Older and unsupported** (the receiver does not retain support for
+  the named version): reject or flag per the unknown/newer rule.
+
+**Evolution.** Version bumps follow semantic versioning:
+
+- **PATCH** — backward-compatible fixes: spec clarifications (typos,
+  ambiguous wording), reference-implementation bug and security
+  fixes, and other changes that do not alter the meaning of a
+  portable record. Receivers supporting any PATCH of a given
+  `MAJOR.MINOR` interpret records from any other PATCH of the same
+  `MAJOR.MINOR` identically.
+- **MINOR** — backward-compatible additions: new optional fields,
+  new enum values, new types. Receivers at the same MAJOR but an
+  older MINOR may encounter unknown fields or enum values; they
+  SHOULD tolerate them if the record is otherwise interpretable.
+- **MAJOR** — potentially breaking changes: field removals, type
+  changes, breaking semantic changes. Receivers pinned to an older
+  MAJOR MUST NOT assume they can interpret records from a newer
+  MAJOR correctly.
+
+**New root-exchangeable types.** If a future version of the standard
+publishes additional types intended to be exchanged as independent
+root records, those types will also carry `schema_version` on the
+same terms.
+
 ## Roadmap
 
 Planned expansions to the standard in later versions. See "Scope of
