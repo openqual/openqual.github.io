@@ -25,7 +25,13 @@ js/
   signoff_policy.js                 # + SignoffPolicy#isEligible, signoffsOK
   signoff_record.js
   task_type_config.js               # + eval criteria/result/subconfigs
-  taskbook_attachment.js
+  source.js
+  person_snapshot.js
+  attachment.js                     # + inline content for portability
+  validity_period.js
+  certifying_agency.js
+  cert_type.js
+  certification.js                  # + isCurrentlyValid
   taskbook_assignment.js            # + assignee, evaluator, host org
   taskbook_subtask.js
   taskbook_task.js                  # + computeStatus, withClampedPoints

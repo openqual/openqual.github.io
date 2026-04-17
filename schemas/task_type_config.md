@@ -46,7 +46,8 @@ discriminator.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `taskbook_template_id` | `String?` | No | Opaque ID of the referenced taskbook template. |
+| `canonical_name` | `String?` | No | Snapshot display name of the referenced taskbook template, frozen at reference time. |
+| `source` | `Source?` | No | Source attribution. `canonical_id` identifies the template in the originating system. |
 | `require_complete` | `bool` | Yes | When `true`, the referenced taskbook must have `status = complete` for this task to count as done. Defaults to `true`. |
 
 ### `TaskTypeSkillsheetConfig`
@@ -55,15 +56,17 @@ Identical shape to `TaskTypeTaskbookConfig`.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `taskbook_template_id` | `String?` | No | Opaque ID of the referenced skillsheet template. |
+| `canonical_name` | `String?` | No | Snapshot display name of the referenced skillsheet template. |
+| `source` | `Source?` | No | Source attribution. `canonical_id` identifies the template. |
 | `require_complete` | `bool` | Yes | Defaults to `true`. |
 
 ### `TaskTypeCertConfig`
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `cert_type_id` | `String?` | No | Opaque ID of the required certification type. |
-| `require_active` | `bool` | Yes | When `true`, the user must hold a currently-valid instance of the cert. Defaults to `true`. |
+| `canonical_name` | `String?` | No | Snapshot display name of the required certification type. |
+| `source` | `Source?` | No | Source attribution. `canonical_id` identifies the cert type. |
+| `require_active` | `bool` | Yes | When `true`, the user must hold a currently-valid instance of the cert (see `Certification.isCurrentlyValid`). Defaults to `true`. |
 
 ## Notes
 
@@ -71,6 +74,9 @@ Identical shape to `TaskTypeTaskbookConfig`.
 - `evaluation_type = scored` requires `points_possible`; a scored
   evaluation with `outcome = fail` still carries `points_awarded` for
   reporting.
-- `evaluated_by`, `taskbook_template_ref`, and `cert_type_ref` are
-  opaque string IDs. Resolution to the referenced entity is the host
-  application's responsibility and is not specified by OpenQual.
+- `evaluated_by` is an opaque string ID. Resolution to the referenced
+  entity is the host application's responsibility.
+- The `canonical_name` + `source` pattern on reference configs follows
+  the same snapshot principle as `SignoffRecord.signatory_name` and
+  `PersonSnapshot.display_name`: the name is frozen at reference time
+  so the record is meaningful without external lookups.

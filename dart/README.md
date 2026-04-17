@@ -25,7 +25,13 @@ dart/
   signoff_policy.dart               # + SignoffPolicy.isEligible, signoffsOK helper
   signoff_record.dart
   task_type_config.dart             # + eval criteria/result/subconfigs
-  taskbook_attachment.dart
+  source.dart
+  person_snapshot.dart
+  attachment.dart                   # + inline content for portability
+  validity_period.dart
+  certifying_agency.dart
+  cert_type.dart
+  certification.dart                # + isCurrentlyValid
   taskbook_assignment.dart          # + assignee, evaluator, host org
   taskbook_subtask.dart
   taskbook_task.dart                # + computeStatus, withClampedPoints

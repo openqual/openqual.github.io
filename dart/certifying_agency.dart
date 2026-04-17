@@ -12,17 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-'use strict';
+import 'source.dart';
 
-class TaskbookAttachment {
-  constructor({ name, path, mimeType, sizeBytes, uploadedAt }) {
-    this.name = name;
-    this.path = path;
-    this.mimeType = mimeType;
-    this.sizeBytes = sizeBytes;
-    this.uploadedAt = uploadedAt;
-    Object.freeze(this);
-  }
+/// Portable representation of an authority that issues certifications.
+class CertifyingAgency {
+  final String name;
+  final String? displayName;
+  final String? website;
+  final String? email;
+  final String? phone;
+  final Source? source;
+
+  const CertifyingAgency({
+    required this.name,
+    this.displayName,
+    this.website,
+    this.email,
+    this.phone,
+    this.source,
+  });
 }
-
-module.exports = { TaskbookAttachment };

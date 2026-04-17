@@ -93,6 +93,30 @@ const RequirementUnits = Object.freeze({
   HOURS: 'hours',
 });
 
+// Discipline area for a certification type. Use OTHER when the discipline
+// is not represented; populate discipline_other on the parent type.
+const Discipline = Object.freeze({
+  FIRE: 'fire',
+  WILDLAND: 'wildland',
+  EMS: 'ems',
+  HAZMAT: 'hazmat',
+  TECHNICAL_RESCUE: 'technical_rescue',
+  LAW_ENFORCEMENT: 'law_enforcement',
+  DISPATCH: 'dispatch',
+  EMERGENCY_MANAGEMENT: 'emergency_management',
+  SAR: 'sar',
+  SKI_PATROL: 'ski_patrol',
+  OTHER: 'other',
+});
+
+// Classification of a credential. Use OTHER when the classification is not
+// represented; populate classification_other on the parent type.
+const CertClassification = Object.freeze({
+  CERTIFICATION: 'certification',
+  LICENSE: 'license',
+  OTHER: 'other',
+});
+
 // Authority roles a user may hold in an organization.
 //
 // These are authority roles only. Pre-membership states (e.g. pending
@@ -115,5 +139,7 @@ module.exports = {
   RenewalStatus,
   TimeUnit,
   RequirementUnits,
+  Discipline,
+  CertClassification,
   OrgRoles,
 };

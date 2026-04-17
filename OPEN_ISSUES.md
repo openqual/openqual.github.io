@@ -1,30 +1,51 @@
 # Open Issues and Observations (v0.1)
 
-Items noticed during Stage 3 extraction that are worth discussing
-before v0.2. Most are notes rather than blockers; the release-blocking
-items for v0.1 are grouped at the top.
+Items noticed during extraction that are worth discussing before v0.2.
+Most are notes rather than blockers; resolved release blockers are
+recorded at the top for history.
 
-## Release blockers for v0.1
+## Release blockers for v0.1 — resolved
 
-The following areas must be drafted and published before v0.1 is
-released. See `schemas/README.md` → "Required for v0.1 (design in
-progress)" for the public framing.
+All three v0.1 release blockers are now resolved. The following classes
+are published: `Certification`, `CertType`, `CertifyingAgency`,
+`PersonSnapshot`, and `Source`.
 
-- **Top-level `Certification` class.** Holds cert name, discipline,
-  validity period, issuing-authority reference, and the relationship
-  to the certification's holder. v0.1 already publishes the renewal
-  machinery; without this class, implementations cannot portably
-  represent a person's certifications.
-- **Identity and contact primitives.** `Name`, `Address`, and related
-  person-identity shapes, sized to what the `Certification` class
-  needs to reference holders and verification contacts.
-- **Certifying-agency and cert-type modeling.** Portable
-  representations of issuing authorities and the cert-type catalogs
-  they maintain.
+- **Top-level `Certification` class.** Resolved — published.
+- **Identity and contact primitives.** Resolved — `PersonSnapshot` and
+  `Source` are published.
+- **Certifying-agency and cert-type modeling.** Resolved — `CertType`
+  and `CertifyingAgency` are published.
 
-Each is substantial on its own and the three interact. They are being
-worked through deliberately rather than rushed; each will get a
-dedicated design pass.
+## Community input requested
+
+- **Renewal requirement shapes beyond NREMT.** The existing
+  `RenewalRequirements` model was built around NREMT-shaped renewals
+  (CE-hour components with sub-requirements). Cert types that renew
+  via "attend refresher class" or "pass re-examination" may not fit
+  cleanly. Community contributions of real-world renewal shapes from
+  different agencies and disciplines would help identify gaps in the
+  model.
+
+- **Validity period edge cases.** `ValidityPeriod` models a single
+  standard duration for all issuances of a cert type. Real-world
+  exceptions exist (emergency extensions during disasters,
+  jurisdictional overrides, provisional issuances with shorter
+  validity). Community contributions of specific examples would help
+  determine whether the model needs enhancement.
+
+## Acknowledged future enhancements
+
+- **Multi-source modification provenance.** When a portable record
+  carrying provenance from one source is modified by another party,
+  v0.1 provides a behavioral guideline (preserve original source
+  attribution). Formal audit trail mechanisms (append-only logs, chain
+  of custody, versioning) are acknowledged as a future enhancement
+  with no specific version commitment.
+
+- **Suspension / revocation status on `Certification`.** 
+  `Certification.isCurrentlyValid` evaluates expiration dates only.
+  Administrative states (suspension, revocation, probation) are not
+  modeled in v0.1. Acknowledged for future enhancement.
 
 ## 1. Book-level status computation — published in v0.1
 

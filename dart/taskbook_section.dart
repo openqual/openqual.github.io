@@ -17,7 +17,7 @@ import 'dart:math' as math;
 import 'completion_state.dart';
 import 'enums.dart';
 import 'signoff_policy.dart';
-import 'taskbook_attachment.dart';
+import 'attachment.dart';
 import 'taskbook_task.dart';
 
 /// Section-level scoring threshold.
@@ -61,7 +61,7 @@ class TaskbookSection {
   final bool signoffPolicyCascades;
   final SectionScoringConfig? scoringConfig;
   final SectionScoringSummary? scoringSummary;
-  final List<TaskbookAttachment> attachments;
+  final List<Attachment> attachments;
   final String? notes;
 
   const TaskbookSection({

@@ -66,24 +66,27 @@ class TaskTypeEvaluationConfig {
 }
 
 class TaskTypeTaskbookConfig {
-  constructor({ taskbookTemplateId = null, requireComplete = true } = {}) {
-    this.taskbookTemplateId = taskbookTemplateId;
+  constructor({ canonicalName = null, source = null, requireComplete = true } = {}) {
+    this.canonicalName = canonicalName;
+    this.source = source;
     this.requireComplete = requireComplete;
     Object.freeze(this);
   }
 }
 
 class TaskTypeSkillsheetConfig {
-  constructor({ taskbookTemplateId = null, requireComplete = true } = {}) {
-    this.taskbookTemplateId = taskbookTemplateId;
+  constructor({ canonicalName = null, source = null, requireComplete = true } = {}) {
+    this.canonicalName = canonicalName;
+    this.source = source;
     this.requireComplete = requireComplete;
     Object.freeze(this);
   }
 }
 
 class TaskTypeCertConfig {
-  constructor({ certTypeId = null, requireActive = true } = {}) {
-    this.certTypeId = certTypeId;
+  constructor({ canonicalName = null, source = null, requireActive = true } = {}) {
+    this.canonicalName = canonicalName;
+    this.source = source;
     this.requireActive = requireActive;
     Object.freeze(this);
   }

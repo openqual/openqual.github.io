@@ -67,6 +67,32 @@ enum TimeUnit { minutes, hours, days, weeks, months, quarters, years }
 /// v0.2.
 enum RequirementUnits { hours }
 
+/// Discipline area for a certification type.
+///
+/// Use [other] when the discipline is not represented by a standard value.
+/// When [other] is used, populate `discipline_other` on the parent type
+/// with a descriptive string.
+enum Discipline {
+  fire,
+  wildland,
+  ems,
+  hazmat,
+  technicalRescue,
+  lawEnforcement,
+  dispatch,
+  emergencyManagement,
+  sar,
+  skiPatrol,
+  other,
+}
+
+/// Classification of a credential.
+///
+/// Use [other] when the classification is not represented by a standard
+/// value. When [other] is used, populate `classification_other` on the
+/// parent type with a descriptive string.
+enum CertClassification { certification, license, other }
+
 /// Authority roles a user may hold in an organization.
 ///
 /// These are authority roles only. Pre-membership states (e.g. pending

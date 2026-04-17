@@ -12,19 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/// A file attached to any node in the TaskBook hierarchy.
-class TaskbookAttachment {
-  final String name;
-  final String path;
-  final String mimeType;
-  final int sizeBytes;
-  final DateTime uploadedAt;
+'use strict';
 
-  const TaskbookAttachment({
-    required this.name,
-    required this.path,
-    required this.mimeType,
-    required this.sizeBytes,
-    required this.uploadedAt,
-  });
+class Source {
+  constructor({ canonicalId = null, canonicalSource = null } = {}) {
+    this.canonicalId = canonicalId;
+    this.canonicalSource = canonicalSource;
+    Object.freeze(this);
+  }
 }
+
+module.exports = { Source };

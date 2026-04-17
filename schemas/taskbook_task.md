@@ -21,7 +21,7 @@ a reference to a nested taskbook / skillsheet / certification.
 | `subtasks` | `List<TaskbookSubtask>` | Yes | Ordered by `TaskbookSubtask.order`. May be empty. |
 | `signoff_policy_override` | `List<SignoffPolicy>` | Yes | Signoff policies for this task. Overrides the section/book policy when non-empty. |
 | `signoffs_require_all` | `bool` | Yes | When `true`, all policies must be completed. Defaults to `true`. |
-| `attachments` | `List<TaskbookAttachment>` | Yes | May be empty. |
+| `attachments` | `List<Attachment>` | Yes | May be empty. |
 | `notes` | `String?` | No | Free-form notes. |
 
 ## Methods

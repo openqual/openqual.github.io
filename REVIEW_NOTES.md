@@ -314,3 +314,282 @@ Recommended fix:
 ### Source tech debt observations
 - The proprietary apps still encode some concepts in shapes that the standard has already improved upon, especially signoff typing, completion state consistency, and attachment metadata richness.
 - The proprietary apps and the standard will both benefit from a clearer export/conformance path once you start building outward-facing interoperability workflows.
+
+## Review Pass 2 — 2026-04-15
+
+Verification scope for this pass:
+- Re-read `openqual/REVIEW_NOTES.md` Review Pass 1 and verified the current extracted state in `openqual/schemas/`, `openqual/dart/`, and `openqual/js/`.
+- Re-checked `openqual/CANDIDATE_INVENTORY.md` for scope/governance reconciliation.
+- Re-scanned extracted artifacts for proprietary dependency leakage terms.
+
+Overall assessment:
+- Stage 5 substantially improved the extraction. Six of the eight Review Pass 1 findings are fully addressed in the current extracted artifacts.
+- Two findings remain partially addressed, but the remaining gaps are much narrower than in Pass 1.
+- No new runtime contamination by Firestore/Firebase/FlutterFlow was found in `schemas/`, `dart/`, or `js/`.
+- One new release-readiness issue and one smaller documentation inconsistency were identified.
+
+## Critical
+
+### 1. v0.1 scope statement now explicitly requires types that are still not published
+Affected extracted file(s):
+- `openqual/schemas/README.md`
+- `openqual/schemas/`
+- `openqual/dart/`
+- `openqual/js/`
+
+Relevant source file(s):
+- `openqual/CANDIDATE_INVENTORY.md`
+- `_sources/certlocker/lib/backend/schema/structs/address_struct.dart`
+- `_sources/certlocker/lib/backend/schema/structs/name_struct.dart`
+
+Issue:
+- New issue. The scope documentation is much clearer than in Pass 1, but it now creates an explicit release blocker: the README says v0.1 cannot be released without the top-level `Certification` class, identity/contact primitives, and certifying-agency / cert-type modeling.
+- Those types are still not present in the extracted schemas or language bindings.
+
+Evidence:
+- `openqual/schemas/README.md:21-23` says v0.1 must be self-sufficient for representing a person's certifications and renewal progress.
+- `openqual/schemas/README.md:36-61` says `Certification`, `Name`, `Address`, and certifying-agency / cert-type modeling are required before v0.1 can be released.
+- `openqual/CANDIDATE_INVENTORY.md:12-29` repeats the same v0.1 requirement and points readers back to `schemas/README.md`.
+- No extracted files currently publish those required types in `openqual/schemas/`, `openqual/dart/`, or `openqual/js/`.
+
+Recommended fix:
+- Pick one of these before release:
+- Option A:
+  draft and publish the missing required types so the release matches the README.
+- Option B:
+  narrow the README's v0.1 commitment so the currently published slice can stand on its own without claiming those missing types are release-gating.
+
+## Important
+
+### 2. Review Pass 1 finding 1 is fully resolved: TaskbookSummary recomputation contract is now published and implemented
+Affected extracted file(s):
+- `openqual/schemas/taskbook_summary.md`
+- `openqual/schemas/taskbook.md`
+- `openqual/dart/taskbook.dart`
+- `openqual/js/taskbook.js`
+
+Relevant source file(s):
+- `_sources/taskbook/lib/backend/schema/structs/taskbook_summary_struct.dart`
+- `_sources/taskbook/lib/backend/schema/structs/taskbook_task_struct.dart`
+- `_sources/taskbook/lib/backend/schema/structs/taskbook_section_struct.dart`
+
+Issue:
+- Resolved. The standard now publishes the recomputation contract that Pass 1 said was missing, and both language bindings implement the book-level recomputation path.
+
+Evidence:
+- `openqual/schemas/taskbook_summary.md:65-105` now defines the recomputation contract for status histograms, signoff totals, scoring summary, and recompute triggers.
+- `openqual/schemas/taskbook.md:71-83` now publishes `Taskbook.computeStatus()`.
+- `openqual/dart/taskbook.dart:196-314` implements book-level status/summary recomputation.
+- `openqual/js/taskbook.js:176-343` implements the same book-level recomputation path.
+
+Recommended fix:
+- No further fix required for the original finding.
+
+### 3. Review Pass 1 finding 2 is fully resolved: SignoffPolicy now has a normative signing contract and compliance check
+Affected extracted file(s):
+- `openqual/schemas/signoff_policy.md`
+- `openqual/schemas/signoff_record.md`
+- `openqual/dart/signoff_policy.dart`
+- `openqual/js/signoff_policy.js`
+
+Relevant source file(s):
+- `_sources/taskbook/lib/backend/schema/structs/taskbook_signoff_policy_struct.dart`
+- `_sources/taskbook/lib/custom_code/actions/quick_check_signoff_eligibility.dart`
+
+Issue:
+- Resolved. The standard now clearly defines the state transition and invariants for a compliant signed policy, and both bindings expose `isValidSigned()`.
+
+Evidence:
+- `openqual/schemas/signoff_policy.md:51-104` now defines `SignoffPolicy.isValidSigned()` and a normative signing contract, including invalid states and legacy-data treatment.
+- `openqual/schemas/signoff_record.md:6-17` continues to define the authoritative signature record.
+- `openqual/dart/signoff_policy.dart:67-92` implements `isValidSigned()`.
+- `openqual/js/signoff_policy.js:61-80` implements `isValidSigned()`.
+
+Recommended fix:
+- No further fix required for the original finding.
+
+### 4. Review Pass 1 finding 3 is only partially resolved: scope is now much clearer, but the clarified scope introduces a release blocker
+Affected extracted file(s):
+- `openqual/schemas/README.md`
+- `openqual/CANDIDATE_INVENTORY.md`
+
+Relevant source file(s):
+- `openqual/CANDIDATE_INVENTORY.md`
+
+Issue:
+- Partially addressed. The project-level scope statement is far clearer than in Pass 1: in-scope, required-before-release, out-of-scope, and deferred areas are now separated cleanly.
+- The remaining problem is the new critical issue above: the clarified scope says v0.1 requires types that still are not published.
+
+Evidence:
+- `openqual/schemas/README.md:25-80` now clearly separates in-scope, required-before-release, and out-of-scope areas.
+- `openqual/CANDIDATE_INVENTORY.md:6-29` has been updated to reflect the same scope-finalization decisions.
+
+Recommended fix:
+- Treat the original scope-clarity problem as fixed in documentation terms.
+- Resolve the remaining release blocker by either publishing the required missing types or narrowing the v0.1 commitment.
+
+### 5. Review Pass 1 finding 4 is fully resolved: scoring is now reconciled across the standard and inventory
+Affected extracted file(s):
+- `openqual/schemas/taskbook_evaluation_config.md`
+- `openqual/schemas/taskbook_section.md`
+- `openqual/dart/taskbook_evaluation_config.dart`
+- `openqual/dart/taskbook_section.dart`
+- `openqual/js/taskbook_evaluation_config.js`
+- `openqual/js/taskbook_section.js`
+- `openqual/CANDIDATE_INVENTORY.md`
+
+Relevant source file(s):
+- `_sources/taskbook/lib/backend/schema/structs/taskbook_evaluation_config_struct.dart`
+- `_sources/taskbook/lib/backend/schema/structs/taskbook_scoring_config_struct.dart`
+- `_sources/taskbook/lib/backend/schema/structs/taskbook_scoring_summary_struct.dart`
+
+Issue:
+- Resolved. The inventory now records the scope decision that scoring was promoted into the core standard, so the project artifacts no longer contradict the published schemas.
+
+Evidence:
+- `openqual/CANDIDATE_INVENTORY.md:22-24` now explicitly states that scoring was reclassified as core.
+- `openqual/CANDIDATE_INVENTORY.md` rows for `TaskbookEvaluationConfigStruct`, `TaskbookScoringConfigStruct`, and `TaskbookScoringSummaryStruct` now describe their published v0.1 names.
+- `openqual/schemas/taskbook_evaluation_config.md:1-33` and `openqual/schemas/taskbook_section.md` continue to publish scoring as part of the standard.
+
+Recommended fix:
+- No further fix required for the original finding.
+
+### 6. Review Pass 1 finding 5 is fully resolved: TaskbookAttachment now has a clear portable storage-handle contract
+Affected extracted file(s):
+- `openqual/schemas/taskbook_attachment.md`
+- `openqual/dart/taskbook_attachment.dart`
+- `openqual/js/taskbook_attachment.js`
+
+Relevant source file(s):
+- `_sources/taskbook/lib/backend/schema/structs/taskbook_attachment_struct.dart`
+
+Issue:
+- Resolved. The spec now makes `path` an opaque stable handle rather than an underspecified URL/path hybrid, and it clarifies the meaning of `uploaded_at`.
+
+Evidence:
+- `openqual/schemas/taskbook_attachment.md:10-31` now defines `path` as an opaque stable handle, forbids persisting signed URLs there, and distinguishes dereferencing as a separate host-side operation.
+- `openqual/schemas/taskbook_attachment.md:14` now clarifies the semantics of `uploaded_at`.
+
+Recommended fix:
+- No further fix required for the original finding.
+
+### 7. Review Pass 1 finding 6 is fully resolved at the type-contract level, but one example still uses string literals
+Affected extracted file(s):
+- `openqual/schemas/signoff_policy.md`
+- `openqual/schemas/README.md`
+- `openqual/dart/enums.dart`
+- `openqual/js/enums.js`
+- `openqual/dart/signoff_policy.dart`
+- `openqual/js/signoff_policy.js`
+
+Relevant source file(s):
+- `_sources/taskbook/lib/custom_code/actions/quick_check_signoff_eligibility.dart`
+- `_sources/taskbook/lib/backend/schema/enums/enums.dart`
+
+Issue:
+- The original finding is resolved in substance. `allowed_roles` is now constrained to `List<OrgRoles>` in the schema and to `List<OrgRoles>` in Dart, which is what Pass 1 recommended.
+- A small documentation inconsistency remains: the `Notes` section still shows `allowed_roles = ["officer"]` and `["admin"]`, which reads like free-form strings rather than enum values.
+
+Evidence:
+- `openqual/schemas/signoff_policy.md:20` now types `allowed_roles` as `List<OrgRoles>`.
+- `openqual/dart/signoff_policy.dart:19-24` uses `List<OrgRoles>`.
+- `openqual/schemas/README.md:150-183` publishes `OrgRoles` as a fixed enum vocabulary.
+- `openqual/schemas/signoff_policy.md:108-112` still gives examples as `allowed_roles = ["officer"]` and `["admin"]`.
+
+Recommended fix:
+- Keep the type contract as-is.
+- Update the note example so it clearly reflects enum-backed values rather than sounding like unrestricted strings.
+
+### 8. Review Pass 1 finding 7 is fully resolved: remaining discriminators were tightened into enums
+Affected extracted file(s):
+- `openqual/schemas/task_type_config.md`
+- `openqual/schemas/taskbook_evaluation_config.md`
+- `openqual/dart/task_type_config.dart`
+- `openqual/dart/taskbook_evaluation_config.dart`
+- `openqual/dart/enums.dart`
+- `openqual/js/task_type_config.js`
+- `openqual/js/taskbook_evaluation_config.js`
+- `openqual/js/enums.js`
+
+Relevant source file(s):
+- `_sources/taskbook/lib/backend/schema/structs/task_type_evaluation_criteria_struct.dart`
+- `_sources/taskbook/lib/backend/schema/structs/taskbook_evaluation_config_struct.dart`
+
+Issue:
+- Resolved. `evaluation_type` and `scoring_mode` are now normalized into `EvaluationType` and `ScoringMode` across the schemas and both bindings.
+
+Evidence:
+- `openqual/schemas/task_type_config.md:30` types `evaluation_type` as `EvaluationType`.
+- `openqual/schemas/taskbook_evaluation_config.md:8-10` types `scoring_mode` as `ScoringMode`.
+- `openqual/dart/enums.dart:48-51` defines both enums.
+- `openqual/js/enums.js:55-64` defines both enums.
+- `openqual/dart/task_type_config.dart`, `openqual/dart/taskbook_evaluation_config.dart`, `openqual/js/task_type_config.js`, and `openqual/js/taskbook_evaluation_config.js` all use those normalized enum values.
+
+Recommended fix:
+- No further fix required for the original finding.
+
+### 9. Review Pass 1 finding 8 is fully resolved: dependency-contrast language has been cleaned up materially
+Affected extracted file(s):
+- `openqual/dart/README.md`
+- `openqual/js/README.md`
+- `openqual/schemas/`
+
+Relevant source file(s):
+- Source mappings are implicit throughout the extraction and candidate inventory.
+
+Issue:
+- Resolved. The extracted docs no longer lean on Firestore/Firebase/FlutterFlow contrast in the way Pass 1 flagged, and a direct scan did not find remaining proprietary dependency terms in the extracted standard/bindings.
+
+Evidence:
+- `openqual/dart/README.md` and `openqual/js/README.md` now lead with plain value-object semantics and standard-library-only usage.
+- A dependency scan across `openqual/schemas`, `openqual/dart`, and `openqual/js` found no remaining `Firestore`, `Firebase`, `FlutterFlow`, or `DocumentReference` references in the extracted artifacts.
+
+Recommended fix:
+- No further fix required for the original finding.
+
+## Nice to Have
+
+### 10. JS signoff-policy docs still underspecify the role value type
+Affected extracted file(s):
+- `openqual/js/signoff_policy.js`
+
+Relevant source file(s):
+- `openqual/schemas/signoff_policy.md`
+- `openqual/dart/signoff_policy.dart`
+
+Issue:
+- New minor clarity issue. The JS binding behavior is correct, but its JSDoc still types `orgMemberships` as `Object<string, string[]>`, which weakens the now-enum-backed role vocabulary and makes the JS docs read looser than the schema and Dart binding.
+
+Evidence:
+- `openqual/js/signoff_policy.js:39-40` documents `orgMemberships` as `Object<string, string[]>` even though the comment text says those arrays contain `OrgRoles` values.
+- `openqual/schemas/signoff_policy.md:28-49` and `openqual/dart/signoff_policy.dart:40-46` both describe the role vocabulary as enum-constrained.
+
+Recommended fix:
+- Tighten the JS doc comment so it clearly says the arrays contain `OrgRoles` values rather than generic strings.
+
+## Pass 2 Summary
+
+### Status of the original 8 findings
+- Fully resolved:
+  1, 2, 4, 5, 7, 8
+- Partially resolved:
+  3, 6
+
+### Partially addressed or regressed items
+- Scope clarity was improved substantially, but the clarified README now makes the missing `Certification` / identity / authority slice an explicit v0.1 release blocker.
+- Role-vocabulary tightening was completed in the type system, but one schema example and one JS doc comment still read as if role values were plain strings.
+
+### New issues observed beyond the original 8
+- New important release-readiness issue:
+  the README and inventory now explicitly require missing v0.1 types that are not yet published.
+- New minor docs issue:
+  the JS signoff-policy docs still describe role arrays too loosely.
+
+### Dependency contamination findings
+- No proprietary runtime dependency leakage found in the current extracted `schemas/`, `dart/`, or `js/` artifacts.
+
+### Recommendation
+- If the goal is to get `0.1` out cleanly and move on, the extraction itself is in good shape.
+- The main decision left is not a field-level cleanup problem; it is whether to:
+  publish the missing required certification/identity/authority slice now,
+  or narrow the formal v0.1 scope so the already-published slice can ship without contradiction.

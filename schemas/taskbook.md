@@ -20,7 +20,7 @@ book-level evaluation scoring.
 | `signoff_policy` | `List<SignoffPolicy>` | Yes | Book-level signoff policies. May be empty. |
 | `signoffs_require_all` | `bool` | Yes | When `true`, all policies in `signoff_policy` must be completed; when `false`, any one suffices. Defaults to `true`. |
 | `signoff_policy_cascades` | `bool` | Yes | When `true`, the book's signoff policy also applies to sections and tasks that have no override. Defaults to `false`. |
-| `attachments` | `List<TaskbookAttachment>` | Yes | May be empty. |
+| `attachments` | `List<Attachment>` | Yes | May be empty. |
 | `notes` | `String?` | No | Free-form notes. |
 | `evaluation_config` | `TaskbookEvaluationConfig?` | No | Book-level scoring mode + threshold. Only meaningful when the book contains scored evaluation tasks. |
 | `start_and_end` | `StartAndEndTimes?` | No | Work session times. |
@@ -42,8 +42,8 @@ for:
 - Initializing `status` to `not_started`, `progress` to `0.0`,
   `completion.complete` to `false`, and `completion.completed_at` to
   `null` on every node.
-- Setting a far-future placeholder `due_date` (year 9999) where one is
-  not provided, as a sentinel for "no due date."
+- Setting the `neverExpireDate` sentinel as the placeholder `due_date`
+  where one is not provided (see `constants.md`).
 - Returning a `Taskbook` with a safe error-shaped payload if parsing
   fails (title `"Error Parsing Import"`, description containing the
   error details).

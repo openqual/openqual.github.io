@@ -16,7 +16,7 @@ import 'completion_state.dart';
 import 'enums.dart';
 import 'signoff_policy.dart';
 import 'task_type_config.dart';
-import 'taskbook_attachment.dart';
+import 'attachment.dart';
 import 'taskbook_subtask.dart';
 
 /// A leaf work unit within a TaskbookSection. Polymorphic via [type] and
@@ -35,7 +35,7 @@ class TaskbookTask {
   final List<TaskbookSubtask> subtasks;
   final List<SignoffPolicy> signoffPolicyOverride;
   final bool signoffsRequireAll;
-  final List<TaskbookAttachment> attachments;
+  final List<Attachment> attachments;
   final String? notes;
 
   const TaskbookTask({

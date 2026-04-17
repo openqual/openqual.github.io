@@ -21,7 +21,7 @@ import 'enums.dart';
 import 'signoff_policy.dart';
 import 'start_and_end_times.dart';
 import 'taskbook_assignment.dart';
-import 'taskbook_attachment.dart';
+import 'attachment.dart';
 import 'taskbook_evaluation_config.dart';
 import 'taskbook_section.dart';
 import 'taskbook_subtask.dart';
@@ -42,7 +42,7 @@ class Taskbook {
   final List<SignoffPolicy> signoffPolicy;
   final bool signoffsRequireAll;
   final bool signoffPolicyCascades;
-  final List<TaskbookAttachment> attachments;
+  final List<Attachment> attachments;
   final String? notes;
   final TaskbookEvaluationConfig? evaluationConfig;
   final StartAndEndTimes? startAndEnd;

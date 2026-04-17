@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import 'completion_state.dart';
-import 'taskbook_attachment.dart';
+import 'attachment.dart';
 
 /// A single checklist item under a TaskbookTask.
 class TaskbookSubtask {
@@ -21,7 +21,7 @@ class TaskbookSubtask {
   final int order;
   final String title;
   final CompletionState completion;
-  final List<TaskbookAttachment> attachments;
+  final List<Attachment> attachments;
 
   const TaskbookSubtask({
     required this.id,

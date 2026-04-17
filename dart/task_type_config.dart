@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import 'enums.dart';
+import 'source.dart';
 
 /// Polymorphic configuration for a TaskbookTask.
 class TaskTypeConfig {
@@ -87,31 +88,37 @@ class TaskTypeEvaluationResult {
 }
 
 class TaskTypeTaskbookConfig {
-  final String? taskbookTemplateId;
+  final String? canonicalName;
+  final Source? source;
   final bool requireComplete;
 
   const TaskTypeTaskbookConfig({
-    this.taskbookTemplateId,
+    this.canonicalName,
+    this.source,
     this.requireComplete = true,
   });
 }
 
 class TaskTypeSkillsheetConfig {
-  final String? taskbookTemplateId;
+  final String? canonicalName;
+  final Source? source;
   final bool requireComplete;
 
   const TaskTypeSkillsheetConfig({
-    this.taskbookTemplateId,
+    this.canonicalName,
+    this.source,
     this.requireComplete = true,
   });
 }
 
 class TaskTypeCertConfig {
-  final String? certTypeId;
+  final String? canonicalName;
+  final Source? source;
   final bool requireActive;
 
   const TaskTypeCertConfig({
-    this.certTypeId,
+    this.canonicalName,
+    this.source,
     this.requireActive = true,
   });
 }

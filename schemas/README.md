@@ -13,6 +13,39 @@ specs.
 If an implementation differs from a spec, the spec is correct and the
 implementation is the bug.
 
+## The OpenQual Principle
+
+> **Standard = Structure + Semantics + Provenance.
+> Catalog = Governance + Richness.**
+
+Include in the standard: the minimum structural definition required for
+a portable instance to be self-contained and meaningful without external
+lookups, plus source attribution fields that enable optional enrichment
+from catalogs or services. Exclude from the standard: operational
+richness, validation rules, and domain-specific governance that create
+value through curation or evolution.
+
+When in doubt about whether something belongs in the standard, apply
+this test: *is it the minimum needed to understand and exchange the
+data independently?* If yes, include it. If it creates value through
+curation or requires operational governance, it belongs in a catalog
+or service layer.
+
+## Catalog strategy
+
+The standard works fully standalone. Source attribution
+(`Source.canonical_id` + `Source.canonical_source`) is present on
+portable instances so that implementations *can* enrich or verify
+data against a catalog, but doing so is entirely optional. A
+conforming implementation with no catalog access can still read,
+display, and interact with any standards-compliant record.
+
+Any party may operate a standards-compliant catalog — catalogs may be
+offered free, commercially, or as subscription services. OpenQual does
+not privilege any single catalog provider.
+
+There is one conformance level in v0.1. No tiered compliance.
+
 ## Scope of v0.1
 
 OpenQual v0.1 publishes the portable class definitions and pure methods
@@ -27,38 +60,15 @@ using v0.1 alone.
 1. **TaskBook core hierarchy** — the taskbook/section/task/subtask tree,
    signoff policies, assignment, attachments, and the evaluation config
    that drives book-, section-, and task-level status computation.
-2. **Certification renewal** — renewal requirements/components, progress
+2. **Certification and credentialing** — the top-level `Certification`
+   class, `CertType`, `CertifyingAgency`, `PersonSnapshot` for holder
+   and instructor identity, and the `Attachment` type with inline
+   content support for portable credential documents.
+3. **Certification renewal** — renewal requirements/components, progress
    tracking, and archived renewals.
-3. **Shared types and constants** — `CompletionState`,
-   `StartAndEndTimes`, and the sentinels published in
-   [constants.md](constants.md).
-
-### Required for v0.1 (design in progress)
-
-The following areas are **required before v0.1 can be released**.
-They are not yet drafted but are inside the v0.1 scope commitment.
-Each is substantial enough to warrant its own modeling pass, and
-several interact, so they are being worked through deliberately
-rather than rushed.
-
-- **Top-level `Certification` class.** v0.1 already publishes
-  everything needed to track progress against a certification's
-  renewal, but the cert itself — its name, discipline, validity
-  period, issuing authority reference, and relationship to its
-  holder — must also be modeled before release. Without this, a
-  conformant implementation cannot represent "a person's
-  certifications" using v0.1 alone.
-- **Identity and contact primitives.** `Name` and `Address` (and
-  related person-identity shapes) are required so that the
-  `Certification` class can reference who holds a certification and
-  where correspondence or verification contacts live. How the
-  standard relates qualifications to identity is being resolved
-  together with the Certification and authority work.
-- **Certifying agency and cert-type modeling.** The standard needs a
-  portable representation of the authorities that issue
-  certifications and of the cert-type catalogs those authorities
-  maintain. This is the third leg of the Certification / identity /
-  authority triangle and will be designed alongside the other two.
+4. **Shared types, constants, and source attribution** —
+   `CompletionState`, `StartAndEndTimes`, `Source`, `ValidityPeriod`,
+   `neverExpireDate`, and the enums that support the above.
 
 ### Out of scope (app concerns, not standard concerns)
 
@@ -92,9 +102,21 @@ v0.1.
 
 | Type | File | Purpose |
 |------|------|---------|
+| `Source` | [source.md](source.md) | Source attribution (provenance) for portable data. |
+| `PersonSnapshot` | [person_snapshot.md](person_snapshot.md) | Frozen point-in-time identity capture for any person reference. |
+| `Attachment` | [attachment.md](attachment.md) | File attached to any node; supports inline content for portability. |
+| `ValidityPeriod` | [validity_period.md](validity_period.md) | Duration + time unit pair. |
 | `CompletionState` | [completion_state.md](completion_state.md) | Unified completion marker used at every hierarchy level. |
 | `StartAndEndTimes` | [start_and_end_times.md](start_and_end_times.md) | Inclusive start/end time pair with derived duration. |
 | Constants | [constants.md](constants.md) | Shared sentinels (e.g. `neverExpireDate`). |
+
+### Certification and credentialing
+
+| Type | File | Purpose |
+|------|------|---------|
+| `Certification` | [certification.md](certification.md) | Top-level portable certification — holder, cert type, agency, validity, renewal progress, credential document. |
+| `CertType` | [cert_type.md](cert_type.md) | Portable definition of a certification type — discipline, level, validity period, renewal requirements. |
+| `CertifyingAgency` | [certifying_agency.md](certifying_agency.md) | Authority that issues certifications. |
 
 ### TaskBook hierarchy
 
@@ -109,7 +131,6 @@ v0.1.
 | `SignoffRecord` | [signoff_record.md](signoff_record.md) | Authoritative record of a completed signoff. |
 | `TaskbookAssignment` | [taskbook_assignment.md](taskbook_assignment.md) | Assignee + evaluator + host organization. |
 | `TaskbookSummary` | [taskbook_summary.md](taskbook_summary.md) | Denormalized counts and aggregates for fast display. |
-| `TaskbookAttachment` | [taskbook_attachment.md](taskbook_attachment.md) | File attached to any node in the hierarchy. |
 | `TaskbookEvaluationConfig` | [taskbook_evaluation_config.md](taskbook_evaluation_config.md) | Book-level scoring mode and thresholds. |
 
 ### Certification renewal
@@ -245,6 +266,37 @@ which measures training credit rather than elapsed time.
 
 Additional units (CE credits, sessions, contact hours) are planned for
 v0.2.
+
+### `Discipline`
+
+Discipline area for a certification type. Use `other` when the
+discipline is not represented; populate `discipline_other` on the
+parent type with a descriptive string.
+
+| Value | Meaning |
+|-------|---------|
+| `fire` | Structural firefighting. |
+| `wildland` | Wildland firefighting. |
+| `ems` | Emergency medical services. |
+| `hazmat` | Hazardous materials response. |
+| `technical_rescue` | Technical rescue (rope, confined space, swift water, etc.). |
+| `law_enforcement` | Law enforcement. |
+| `dispatch` | Emergency dispatch / communications. |
+| `emergency_management` | Emergency management. |
+| `sar` | Search and rescue. |
+| `ski_patrol` | Ski patrol. |
+| `other` | Discipline not listed above; see `discipline_other`. |
+
+### `CertClassification`
+
+Classification of a credential. Use `other` when the classification
+is not represented; populate `classification_other` on the parent type.
+
+| Value | Meaning |
+|-------|---------|
+| `certification` | A certification (e.g. NREMT EMT-B). |
+| `license` | A license (e.g. state nursing license). |
+| `other` | Classification not listed above; see `classification_other`. |
 
 ### `OrgRoles`
 

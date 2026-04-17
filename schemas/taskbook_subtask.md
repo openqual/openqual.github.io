@@ -12,7 +12,7 @@ status via `TaskbookTask.computeStatus`.
 | `order` | `int` | Yes | Position among sibling subtasks. |
 | `title` | `String` | Yes | Display name. |
 | `completion` | `CompletionState` | Yes | Owner completion marker. |
-| `attachments` | `List<TaskbookAttachment>` | Yes | May be empty. |
+| `attachments` | `List<Attachment>` | Yes | May be empty. |
 
 ## Methods
 

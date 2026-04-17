@@ -22,7 +22,7 @@ of the book-level policy and threshold.
 | `signoff_policy_cascades` | `bool` | Yes | When `true`, this section's signoff policy also applies to child tasks that have no override. Defaults to `false`. |
 | `scoring_config` | `SectionScoringConfig?` | No | Section-level scoring threshold. See below. |
 | `scoring_summary` | `SectionScoringSummary?` | No | Denormalized scoring totals. Recomputed by `computeStatus`. |
-| `attachments` | `List<TaskbookAttachment>` | Yes | May be empty. |
+| `attachments` | `List<Attachment>` | Yes | May be empty. |
 | `notes` | `String?` | No | Free-form notes. |
 
 ## Nested types
