@@ -88,7 +88,7 @@ const TimeUnit = Object.freeze({
   YEARS: 'years',
 });
 
-// Additional units (CE credits, sessions, contact hours) are planned for v0.2.
+// Additional units (CE credits, sessions, contact hours) are planned for a future version.
 const RequirementUnits = Object.freeze({
   HOURS: 'hours',
 });

@@ -51,8 +51,8 @@ The scope is intentionally narrow:
 - `OrgMembership` is **not the canonical member-of-org model** for
   OpenQual. It is a convenience capture on a person snapshot. A
   richer membership model — with lifecycle, subunits, employment
-  relationships, etc. — is planned for v0.2. See the Roadmap in
-  `README.md`.
+  relationships, etc. — is planned for a future version. See the
+  Roadmap in `README.md`.
 
 ## Notes
 

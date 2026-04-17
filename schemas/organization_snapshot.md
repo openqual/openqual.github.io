@@ -31,7 +31,7 @@ across holder, instructor, and evaluator slots.
 - The struct does not model the organization itself — no membership
   lifecycle, no subunits (stations, shifts, crews), no governance or
   policies. A richer `Organization` class with these concerns is
-  planned for v0.2. See the Roadmap in `README.md`.
+  planned for a future version. See the Roadmap in `README.md`.
 - Contact fields (`website`, `email`, `phone`) are optional. They are
   included so a portable record can carry basic contact info without
   requiring a catalog lookup. Richer organization data (accreditations,

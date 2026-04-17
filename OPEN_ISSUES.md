@@ -1,8 +1,8 @@
 # Open Issues and Observations (v0.1)
 
-Items noticed during extraction that are worth discussing before v0.2.
-Most are notes rather than blockers; resolved release blockers are
-recorded at the top for history.
+Items noticed during extraction that are worth discussing in future
+releases. Most are notes rather than blockers; resolved release
+blockers are recorded at the top for history.
 
 ## Release blockers for v0.1 — resolved
 
@@ -86,8 +86,8 @@ by 100 (`70` → `0.70`) with a warning. This is a guard against a UI
 bug that lets users enter percents instead of fractions. A cleaner
 long-term fix is a dedicated `PassingPercentage` value type with a
 validating constructor, but for now the guard is present in the
-reference implementations. Consider removing the guard in v0.2 once
-UIs uniformly write fractions.
+reference implementations. Consider removing the guard in a future
+version once UIs uniformly write fractions.
 
 ## 5. Divergence in `calculateCertificationProgress`
 
@@ -152,8 +152,9 @@ all, any future phone-handling utility must be E.164-first.
 `PreviousRenewalStruct.renewal_progress_at_archiving.requirements_version`
 pins the version that was satisfied, but nothing validates that the
 current requirements definition is "compatible" with prior cycles. A
-v0.2 decision: does the standard want a version-compatibility method,
-or is "versioning is the host application's concern" the right answer?
+deferred decision: does the standard want a version-compatibility
+method, or is "versioning is the host application's concern" the
+right answer?
 
 ## 13. `computeSection` mutates `pointsAwarded` when clamping
 

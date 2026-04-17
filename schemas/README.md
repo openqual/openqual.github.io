@@ -326,8 +326,8 @@ which measures training credit rather than elapsed time.
 |-------|
 | `hours` |
 
-Additional units (CE credits, sessions, contact hours) are planned for
-v0.2.
+Additional units (CE credits, sessions, contact hours) are planned
+for a future version. See the Roadmap.
 
 ### `Discipline`
 
@@ -410,9 +410,9 @@ in which orgs?" at the moment eligibility is evaluated. See
 
 What v0.1 does **not** model: the organization's own lifecycle (how it
 is created, governed, dissolved), subunits (stations, shifts, crews),
-or the membership lifecycle (invited, requested, accepted). A richer
-`Organization` class covering these concerns is planned for v0.2. See
-Roadmap below.
+or the membership lifecycle (invited, requested, accepted). Richer
+organization modeling is planned for a future version — see Roadmap
+below.
 
 What v0.1 does require of a compliant host: it MUST be able to answer,
 for any user, "what roles does this user hold in which orgs?" —
@@ -421,11 +421,6 @@ represented as `Map<orgId, List<OrgRoles>>` and passed into
 `OrgRoles`; memberships returned by the host MUST contain only values
 from that enum. A user who is not an accepted member of an org MUST
 NOT appear in that map for the org in question.
-
-Richer organization modeling — the `Organization` class itself, the
-membership lifecycle, stations and other subunits, and the separation
-between employing organizations (e.g. a fire department) and
-certifying agencies — is planned for v0.2. See Roadmap below.
 
 ## Conventions
 
@@ -660,7 +655,8 @@ v0.1" above for the full deferred / out-of-scope split.
   layered on top of `OrganizationSnapshot`, the membership lifecycle
   (invited, requested, accepted), and subunits such as stations.
   v0.1 publishes `OrganizationSnapshot` as the snapshot-shaped portable
-  identity type; v0.2 adds the lifecycle and membership layer.
+  identity type; future versions will add the lifecycle and
+  membership layer.
 - **Type-side earned-via linkage.** v0.1 captures earned-via as an
   instance-level snapshot on `Certification` (see
   `certification.md` → "Earned-via linkage"). A type-level statement

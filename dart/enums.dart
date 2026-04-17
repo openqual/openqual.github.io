@@ -63,8 +63,8 @@ enum TimeUnit { minutes, hours, days, weeks, months, quarters, years }
 
 /// Unit for a [RenewalRequirement]'s target quantity.
 ///
-/// Additional units (CE credits, sessions, contact hours) are planned for
-/// v0.2.
+/// Additional units (CE credits, sessions, contact hours) are planned
+/// for a future version.
 enum RequirementUnits { hours }
 
 /// Discipline area for a certification type.
