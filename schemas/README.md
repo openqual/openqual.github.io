@@ -163,7 +163,7 @@ v0.1.
 | Type | File | Purpose |
 |------|------|---------|
 | `Source` | [source.md](source.md) | Source attribution (provenance) for portable data. |
-| `PersonSnapshot` | [person_snapshot.md](person_snapshot.md) | Frozen point-in-time identity capture for any person reference. |
+| `PersonSnapshot` | [person_snapshot.md](person_snapshot.md) | Frozen point-in-time identity capture for any person reference. Optionally carries bounded `OrgMembership` snapshots for eligibility evaluation. |
 | `OrganizationSnapshot` | [organization_snapshot.md](organization_snapshot.md) | Frozen organization identity + contact. Used for certifying agency, host org, and other organization-shaped slots. |
 | `Attachment` | [attachment.md](attachment.md) | File attached to any node; supports inline content for portability. |
 | `ValidityPeriod` | [validity_period.md](validity_period.md) | Duration + time unit pair. |
@@ -189,7 +189,7 @@ v0.1.
 | `TaskTypeConfig` | [task_type_config.md](task_type_config.md) | Polymorphic config for evaluation / nested taskbook / skillsheet / cert tasks. |
 | `SignoffPolicy` | [signoff_policy.md](signoff_policy.md) | Who may sign off; attached at taskbook, section, or task level. |
 | `SignoffRecord` | [signoff_record.md](signoff_record.md) | Authoritative record of a completed signoff. |
-| `TaskbookAssignment` | [taskbook_assignment.md](taskbook_assignment.md) | Assignee + evaluator + host organization. |
+| `TaskbookAssignment` | [taskbook_assignment.md](taskbook_assignment.md) | Assignee + evaluator + host. Pairs `PersonSnapshot` and `OrganizationSnapshot` with assignment timestamps via `AssignedPerson` / `AssignedOrganization`. |
 | `TaskbookSummary` | [taskbook_summary.md](taskbook_summary.md) | Denormalized counts and aggregates for fast display. |
 | `TaskbookEvaluationConfig` | [taskbook_evaluation_config.md](taskbook_evaluation_config.md) | Book-level scoring mode and thresholds. |
 
@@ -247,7 +247,7 @@ additional causes unrelated to evaluation outcome (see `WorkItemStatus`).
 |-------|---------|
 | `this_user` | Only the current user (taskbook owner) may sign. |
 | `specify_users` | Only users listed in `allowedUsers` may sign. |
-| `org_members` | Any member of one of `allowedOrgs`, optionally further constrained by `allowedRoles`, may sign. |
+| `org_members` | Any member of one of the organizations in `allowedOrgs`, optionally further constrained by `allowedRoles`, may sign. |
 
 `org_officers` and `org_admins` are expressible as `org_members` with
 specific `allowedRoles` values. They are reserved for a future version
@@ -373,24 +373,30 @@ holds no role.
 
 ## Organizations in the standard
 
-Organizations appear in the standard in two forms.
-
-**As `OrganizationSnapshot`.** For any slot where a portable record
-needs to identify an organization by name, contact, and provenance —
-today, this is `CertType.certifying_agency`, and the pattern extends
-to other organization-shaped slots as the standard develops.
-`OrganizationSnapshot` is snapshot-shaped: it captures identity at a
-point in time and does not model the organization's own lifecycle,
-subunits, or membership. Different kinds of organizations (certifying
-agencies, employing departments, mutual-aid partners, etc.) share the
-same struct; implementers encode kind distinctions via
+Organizations are referenced through `OrganizationSnapshot` wherever
+the standard captures an org-shaped value. Today that includes
+`CertType.certifying_agency` and `SignoffPolicy.allowed_orgs`, and the
+pattern extends to any organization-shaped slot as the standard
+develops. `OrganizationSnapshot` is snapshot-shaped: it captures
+identity at a point in time and does not model the organization's own
+lifecycle, subunits, or membership. Different kinds of organizations
+(certifying agencies, employing departments, mutual-aid partners,
+etc.) share the same struct; implementers encode kind distinctions via
 `source.canonical_source` when their catalog distinguishes them. See
 `organization_snapshot.md` and `source.md`.
 
-**As opaque IDs.** For eligibility evaluation — via
-`SignoffPolicy.allowed_orgs`. v0.1 does not publish an `Organization`
-class or prescribe how orgs are stored, how users join or leave, or
-how pending / invited / accepted membership states are modeled.
+For eligibility evaluation, `SignoffPolicy.isEligible` takes a map of
+the user's memberships keyed by organization `canonical_id`. That map
+is an argument to the method, not a persisted record — it is the host
+application's responsibility to answer "what roles does this user hold
+in which orgs?" at the moment eligibility is evaluated. See
+`signoff_policy.md` for the full matching contract.
+
+What v0.1 does **not** model: the organization's own lifecycle (how it
+is created, governed, dissolved), subunits (stations, shifts, crews),
+or the membership lifecycle (invited, requested, accepted). A richer
+`Organization` class covering these concerns is planned for v0.2. See
+Roadmap below.
 
 What v0.1 does require of a compliant host: it must be able to answer,
 for any user, "what roles does this user hold in which orgs?" —

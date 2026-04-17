@@ -14,45 +14,50 @@
 
 'use strict';
 
-class TaskbookAssignee {
-  constructor({ userId, displayName, assignedAt = null }) {
-    this.userId = userId;
-    this.displayName = displayName;
+const { OrganizationSnapshot } = require('./organization_snapshot');
+const { PersonSnapshot } = require('./person_snapshot');
+
+/**
+ * A person captured at the time of assignment, paired with the
+ * timestamp of when the assignment was made. Reused for assignee
+ * and evaluator slots.
+ */
+class AssignedPerson {
+  constructor({ person, assignedAt = null }) {
+    this.person = person;
     this.assignedAt = assignedAt;
     Object.freeze(this);
   }
 }
 
-class TaskbookEvaluator {
-  constructor({ userId, displayName, assignedAt = null }) {
-    this.userId = userId;
-    this.displayName = displayName;
+/**
+ * An organization captured at the time of assignment, paired with
+ * the timestamp of when the assignment was made. Used for the host
+ * slot today and reusable for future organization-assignment slots.
+ */
+class AssignedOrganization {
+  constructor({ organization, assignedAt = null }) {
+    this.organization = organization;
     this.assignedAt = assignedAt;
     Object.freeze(this);
   }
 }
 
-class TaskbookHostOrg {
-  constructor({ orgId, displayName, assignedAt = null }) {
-    this.orgId = orgId;
-    this.displayName = displayName;
-    this.assignedAt = assignedAt;
-    Object.freeze(this);
-  }
-}
-
+/**
+ * The assignment triple for a Taskbook: who is doing it, who will
+ * evaluate it, and what organization is hosting it.
+ */
 class TaskbookAssignment {
-  constructor({ assignee = null, evaluator = null, hostOrg = null } = {}) {
+  constructor({ assignee = null, evaluator = null, host = null } = {}) {
     this.assignee = assignee;
     this.evaluator = evaluator;
-    this.hostOrg = hostOrg;
+    this.host = host;
     Object.freeze(this);
   }
 }
 
 module.exports = {
   TaskbookAssignment,
-  TaskbookAssignee,
-  TaskbookEvaluator,
-  TaskbookHostOrg,
+  AssignedPerson,
+  AssignedOrganization,
 };

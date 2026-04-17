@@ -16,7 +16,7 @@ This type captures the **configuration** (who may sign). The
 | `id` | `String` | Yes | Opaque ID unique among sibling policies on the same node. |
 | `type` | `SignoffPolicyType` | Yes | One of `this_user`, `specify_users`, `org_members`. |
 | `allowed_users` | `List<String>` | Yes | Opaque user IDs. Consulted when `type = specify_users`. May be empty for other types. |
-| `allowed_orgs` | `List<String>` | Yes | Opaque organization IDs. Consulted when `type = org_members`. May be empty for other types. |
+| `allowed_orgs` | `List<OrganizationSnapshot>` | Yes | Organizations whose members may sign. Each entry is a full portable snapshot with provenance, so the policy is self-contained — a receiving system does not need a catalog lookup to know which orgs the policy authorizes. Consulted when `type = org_members`. May be empty for other types. See "Matching organizations" below for the equality rules. |
 | `allowed_roles` | `List<OrgRoles>` | Yes | Role constraints. Consulted when `type = org_members` to further constrain eligibility to members holding one of the listed roles. May be empty (meaning any org member qualifies). |
 | `completed` | `bool` | Yes | `true` once a qualifying user has signed. Defaults to `false`. |
 | `completion_timestamp` | `DateTime?` | No | Timestamp the policy transitioned to `completed = true`. Mirrors `SignoffRecord.signed_at`. |
@@ -33,20 +33,68 @@ Pure. Returns whether the given user is eligible to sign this policy.
 - `user_id` — the candidate signer.
 - `taskbook_owner_id` — the user ID of the taskbook's owner/assignee;
   used only when `type = this_user`.
-- `org_memberships` — a map from organization ID to the list of
-  `OrgRoles` the user holds in that organization. For example
-  `{"org_abc": [OrgRoles.member, OrgRoles.officer]}`. Pass an empty
-  map if the user has no org memberships. Membership is determined by
-  the host application and passed in; this method does not fetch
-  anything.
+- `org_memberships` — a map from organization `canonical_id` to the
+  list of `OrgRoles` the user holds in that organization. Keys must
+  match the `source.canonical_id` of organizations the user is a
+  member of; see "Matching organizations" below for the full matching
+  contract. For example `{"org_abc": [OrgRoles.member, OrgRoles.officer]}`.
+  Pass an empty map if the user has no org memberships. Membership is
+  determined by the host application and passed in; this method does
+  not fetch anything.
 
 **Logic by type:**
 
 - `this_user`: returns `user_id == taskbook_owner_id`.
 - `specify_users`: returns `user_id in allowed_users`.
-- `org_members`: returns `true` iff the user is a member of at least
-  one organization in `allowed_orgs`. If `allowed_roles` is non-empty,
-  the user's roles in that org must intersect `allowed_roles`.
+- `org_members`: for each `OrganizationSnapshot` in `allowed_orgs`,
+  reads `source.canonical_id` and looks it up in `org_memberships`.
+  Returns `true` if any lookup succeeds and the user's roles in that
+  org satisfy `allowed_roles` (empty `allowed_roles` means any
+  membership qualifies; non-empty means the user's roles must
+  intersect `allowed_roles`). See "Matching organizations" for the
+  equality rules and how un-sourced snapshots are handled.
+
+### `SignoffPolicy.isEligibleFor(signer: PersonSnapshot, taskbook_owner: PersonSnapshot) → bool`
+
+Pure. Snapshot-based alternative to `isEligible`. Returns whether the
+signer is eligible to sign this policy when both the signer and the
+taskbook owner are already available as `PersonSnapshot` values.
+
+**Arguments:**
+
+- `signer` — the candidate signer, as a `PersonSnapshot`. For
+  `type = org_members`, the signer's `memberships` field supplies the
+  memberships consulted for eligibility.
+- `taskbook_owner` — the taskbook's owner/assignee, as a
+  `PersonSnapshot`; used only when `type = this_user`.
+
+**Logic by type:**
+
+- `this_user`: returns `true` iff `signer` and `taskbook_owner` refer
+  to the same person — their `source.canonical_id` and
+  `source.canonical_source` are both non-null and equal. If either
+  snapshot lacks full provenance, returns `false`.
+- `specify_users`: returns `true` iff the signer's
+  `source.canonical_id` is in `allowed_users`. Returns `false` if
+  the signer lacks a `canonical_id`.
+- `org_members`: iterates `allowed_orgs` and `signer.memberships`,
+  matching on full `canonical_id + canonical_source` equality. If a
+  matching membership is found and `allowed_roles` is empty OR the
+  membership's roles intersect `allowed_roles`, returns `true`.
+
+Un-sourced snapshots never match under any type — see "Matching
+organizations" below.
+
+**When to use which form:**
+
+- Use this method when the caller already has `PersonSnapshot` values
+  for the signer and owner. It avoids building a string-keyed
+  memberships map out of band, and it supports cross-source matching
+  via the full source tuple.
+- Use the map-based `isEligible` when the host's membership data is
+  already shaped as `Map<String, List<OrgRoles>>` under a single
+  `canonical_source` convention and the cost of constructing
+  `PersonSnapshot` values isn't warranted.
 
 ### `SignoffPolicy.isValidSigned() → bool`
 
@@ -60,6 +108,47 @@ Pure. Returns `true` iff the policy is in a compliant state:
 
 Returns `false` for the invalid states enumerated in the signing
 contract below.
+
+## Matching organizations (normative)
+
+When `type = org_members`, matching an entry in `allowed_orgs`
+against the user's memberships follows these rules:
+
+1. **Identity is the source fields.** Two `OrganizationSnapshot`
+   values refer to the same organization iff their
+   `source.canonical_id` values are equal AND their
+   `source.canonical_source` values are equal. Display fields
+   (`name`, `display_name`, contact info) are **not** considered for
+   identity. Those capture how the snapshot looked at capture time and
+   may legitimately differ across sources or over time.
+
+2. **No provenance means no match.** An `OrganizationSnapshot` whose
+   `source` is null, or whose `source.canonical_id` or
+   `source.canonical_source` is missing, cannot be globally
+   identified. It MUST NOT match any membership. A policy built with
+   un-sourced snapshots in `allowed_orgs` is effectively unenforceable
+   under `type = org_members` — hosts SHOULD require provenance on
+   policy `allowed_orgs`.
+
+3. **Two signatures, two matching strategies.** The standard defines
+   two forms of eligibility evaluation (see Methods above):
+
+   - **Map-based `isEligible`** — the `Map<String, List<OrgRoles>>`
+     key is the organization's `canonical_id`. This signature assumes
+     all snapshots in `allowed_orgs` and all user memberships come
+     from a single `canonical_source`; the `canonical_source` equality
+     check is implicit in the host using a consistent key convention.
+   - **Snapshot-based `isEligibleFor`** — matches on full
+     `canonical_id + canonical_source` tuples directly from the
+     `OrganizationSnapshot` values in `allowed_orgs` and in
+     `signer.memberships`. Use this signature when a record spans
+     multiple sources, or when `PersonSnapshot` values are already
+     available.
+
+4. **Suspension / revocation / pre-membership states** are outside
+   the standard's eligibility model. A user either holds a role in an
+   org (present in the memberships map) or does not (absent). See
+   "Organizations in the standard" in `README.md`.
 
 ## Signing contract (normative)
 

@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import 'enums.dart';
+import 'organization_snapshot.dart';
 import 'source.dart';
 
 /// Frozen point-in-time identity capture.
@@ -26,6 +28,7 @@ class PersonSnapshot {
   final String? middleName;
   final String? suffix;
   final String? email;
+  final List<OrgMembership>? memberships;
   final Source? source;
 
   const PersonSnapshot({
@@ -35,6 +38,17 @@ class PersonSnapshot {
     this.middleName,
     this.suffix,
     this.email,
+    this.memberships,
     this.source,
   });
+}
+
+/// An organization membership captured on a [PersonSnapshot].
+/// Snapshot-shaped; carries no lifecycle vocabulary. See
+/// "Memberships and scope boundary" in schemas/person_snapshot.md.
+class OrgMembership {
+  final OrganizationSnapshot organization;
+  final List<OrgRoles> roles;
+
+  const OrgMembership({required this.organization, required this.roles});
 }

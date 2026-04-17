@@ -14,6 +14,7 @@
 
 'use strict';
 
+const { OrganizationSnapshot } = require('./organization_snapshot');
 const { Source } = require('./source');
 
 /**
@@ -28,6 +29,7 @@ class PersonSnapshot {
     middleName = null,
     suffix = null,
     email = null,
+    memberships = null,
     source = null,
   }) {
     this.displayName = displayName;
@@ -36,9 +38,23 @@ class PersonSnapshot {
     this.middleName = middleName;
     this.suffix = suffix;
     this.email = email;
+    this.memberships = memberships == null ? null : Object.freeze([...memberships]);
     this.source = source;
     Object.freeze(this);
   }
 }
 
-module.exports = { PersonSnapshot };
+/**
+ * An organization membership captured on a PersonSnapshot.
+ * Snapshot-shaped; carries no lifecycle vocabulary. See
+ * "Memberships and scope boundary" in schemas/person_snapshot.md.
+ */
+class OrgMembership {
+  constructor({ organization, roles }) {
+    this.organization = organization;
+    this.roles = Object.freeze([...roles]);
+    Object.freeze(this);
+  }
+}
+
+module.exports = { PersonSnapshot, OrgMembership };

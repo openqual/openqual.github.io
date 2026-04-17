@@ -12,48 +12,35 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import 'organization_snapshot.dart';
+import 'person_snapshot.dart';
+
 /// The assignment triple for a Taskbook: who is doing it, who will
 /// evaluate it, and what organization is hosting it.
 class TaskbookAssignment {
-  final TaskbookAssignee? assignee;
-  final TaskbookEvaluator? evaluator;
-  final TaskbookHostOrg? hostOrg;
+  final AssignedPerson? assignee;
+  final AssignedPerson? evaluator;
+  final AssignedOrganization? host;
 
-  const TaskbookAssignment({this.assignee, this.evaluator, this.hostOrg});
+  const TaskbookAssignment({this.assignee, this.evaluator, this.host});
 }
 
-class TaskbookAssignee {
-  final String userId;
-  final String displayName;
+/// A person captured at the time of assignment, paired with the
+/// timestamp of when the assignment was made. Reused for assignee
+/// and evaluator slots.
+class AssignedPerson {
+  final PersonSnapshot person;
   final DateTime? assignedAt;
 
-  const TaskbookAssignee({
-    required this.userId,
-    required this.displayName,
-    this.assignedAt,
-  });
+  const AssignedPerson({required this.person, this.assignedAt});
 }
 
-class TaskbookEvaluator {
-  final String userId;
-  final String displayName;
+/// An organization captured at the time of assignment, paired with
+/// the timestamp of when the assignment was made. Used for the host
+/// slot today and reusable for future organization-assignment slots.
+class AssignedOrganization {
+  final OrganizationSnapshot organization;
   final DateTime? assignedAt;
 
-  const TaskbookEvaluator({
-    required this.userId,
-    required this.displayName,
-    this.assignedAt,
-  });
-}
-
-class TaskbookHostOrg {
-  final String orgId;
-  final String displayName;
-  final DateTime? assignedAt;
-
-  const TaskbookHostOrg({
-    required this.orgId,
-    required this.displayName,
-    this.assignedAt,
-  });
+  const AssignedOrganization({required this.organization, this.assignedAt});
 }

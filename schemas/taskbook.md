@@ -15,7 +15,7 @@ book-level evaluation scoring.
 | `status` | `WorkItemStatus` | Yes | Computed by the section-/book-level waterfall. Stored denormalized for fast reads. |
 | `progress` | `double` | Yes | `0.0`–`1.0`. Computed from child sections. |
 | `completion` | `CompletionState` | Yes | Owner completion marker for the book as a whole. |
-| `assignment` | `TaskbookAssignment?` | No | Assignee / evaluator / host org. |
+| `assignment` | `TaskbookAssignment?` | No | Assignee, evaluator, and host. |
 | `sections` | `List<TaskbookSection>` | Yes | Ordered by `TaskbookSection.order`. May be empty. |
 | `signoff_policy` | `List<SignoffPolicy>` | Yes | Book-level signoff policies. May be empty. |
 | `signoffs_require_all` | `bool` | Yes | When `true`, all policies in `signoff_policy` must be completed; when `false`, any one suffices. Defaults to `true`. |
