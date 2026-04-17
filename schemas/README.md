@@ -476,15 +476,21 @@ the current value.
 
 - **Exact match** (the value equals the version the receiver
   supports): proceed normally.
-- **Unknown or newer** (the receiver does not recognize the value, or
-  the value is a later version than the receiver supports): the
-  receiver MUST NOT silently process the record. Options: reject with
-  a clear error, or flag the record for review. The receiver MUST NOT
-  assume forward compatibility absent an explicit policy.
+- **Newer PATCH or MINOR within a MAJOR the receiver supports**: the
+  receiver SHOULD proceed, applying the forward-compatibility
+  tolerance rules in the Evolution paragraph below. This is the
+  backward-compatibility semver promises within a MAJOR — new
+  optional fields and new enum values MAY appear, and the receiver
+  handles them gracefully rather than rejecting the record.
+- **Newer MAJOR, or a major-family the receiver does not recognize**:
+  the receiver MUST NOT silently process the record. Options: reject
+  with a clear error, or flag the record for review. The receiver
+  MUST NOT assume cross-MAJOR compatibility absent an explicit
+  policy.
 - **Older and supported** (the receiver supports multiple versions
   including this one): proceed using the rules of the named version.
 - **Older and unsupported** (the receiver does not retain support for
-  the named version): reject or flag per the unknown/newer rule.
+  the named version): reject or flag per the newer-MAJOR rule.
 
 **Evolution.** Version bumps follow semantic versioning:
 
@@ -573,8 +579,13 @@ A single application may be both. Each role has its own bar.
 - Reject records where a required field is missing.
 - Reject records where an enum-typed field contains a value not in
   the published enum vocabulary for the version named in
-  `schema_version`, except when the enum has an `other` escape hatch
-  (see SHOULD below).
+  `schema_version`, subject to two exceptions: (a) enums with an
+  `other` escape hatch (`Discipline`, `CertClassification`), for
+  which the receiver MAY treat unknown values as `other`; (b) records
+  whose `schema_version` names a newer MINOR of the same MAJOR, for
+  which the receiver SHOULD tolerate unknown enum values per the
+  semver forward-compat rules in "Schema versioning" (see SHOULD
+  below).
 - Accept both serialization forms for calendar-date fields and
   normalize to the day for comparison.
 - Treat snapshot-shaped fields as frozen on read. Receivers MUST NOT

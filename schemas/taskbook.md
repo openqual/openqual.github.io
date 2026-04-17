@@ -28,6 +28,7 @@ book-level evaluation scoring.
 | `taskbook_summary` | `TaskbookSummary?` | No | Denormalized counts for fast display. Recomputed by the status waterfall. |
 | `import_status` | `String?` | No | Status from an external-import pipeline (e.g. AI generation). Implementation-defined. |
 | `import_notes` | `String?` | No | Notes from an external-import pipeline. |
+| `source` | `Source?` | No | Source attribution for this taskbook record. Per the provenance inheritance rule in `source.md`, nested types inherit from this value unless they carry their own. |
 
 ## Methods
 

@@ -55,6 +55,7 @@ class Taskbook {
     taskbookSummary = null,
     importStatus = null,
     importNotes = null,
+    source = null,
   }) {
     this.schemaVersion = schemaVersion;
     this.taskbookType = taskbookType;
@@ -76,6 +77,7 @@ class Taskbook {
     this.taskbookSummary = taskbookSummary;
     this.importStatus = importStatus;
     this.importNotes = importNotes;
+    this.source = source;
     Object.freeze(this);
   }
 

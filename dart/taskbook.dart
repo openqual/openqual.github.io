@@ -19,6 +19,7 @@ import 'completion_state.dart';
 import 'constants.dart';
 import 'enums.dart';
 import 'signoff_policy.dart';
+import 'source.dart';
 import 'start_and_end_times.dart';
 import 'taskbook_assignment.dart';
 import 'attachment.dart';
@@ -50,6 +51,7 @@ class Taskbook {
   final TaskbookSummary? taskbookSummary;
   final String? importStatus;
   final String? importNotes;
+  final Source? source;
 
   const Taskbook({
     this.schemaVersion = openqualSchemaVersion,
@@ -72,6 +74,7 @@ class Taskbook {
     this.taskbookSummary,
     this.importStatus,
     this.importNotes,
+    this.source,
   });
 
   /// Factory. Parses a JSON string (typically from an AI import) into a
