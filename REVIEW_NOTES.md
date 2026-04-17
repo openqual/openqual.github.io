@@ -759,3 +759,138 @@ Recommended fix:
   `Certification.isCurrentlyValid()`,
   the attachment portability contract,
   and the attachment provenance gap.
+
+## Review Pass 4 — 2026-04-17
+
+Review scope for this pass:
+- Re-read prior review context in `openqual/REVIEW_NOTES.md`.
+- Reviewed the updated framing in `openqual/schemas/README.md`, `openqual/README.md`, and `openqual/index.html`.
+- Reviewed the org/signoff cluster, schema-versioning, calendar-date semantics, and the two worked examples across `schemas/`, `dart/`, and `js/`.
+
+Overall assessment:
+- This is the strongest state OpenQual has been in across the four formal passes.
+- The spec now reads like a real public standard rather than a cleaned-up extraction: scope is explicit, the center of gravity is clear, the org/snapshot model is coherent, and the examples materially improve third-party implementability.
+- I found two items worth fixing before a `v0.1` release tag. One is a genuine normative contradiction; the other is a provenance gap where the `Taskbook` model lags behind the project’s own principle and example set.
+- The two explicitly deferred backlog areas called out in the request do not create a current inconsistency by themselves.
+
+## Release-Blocking
+
+### 1. Schema-versioning and receiver-conformance rules contradict each other on newer MINOR versions
+Affected extracted file(s):
+- `openqual/schemas/README.md`
+
+Relevant source file(s):
+- No direct source analogue; this is a standards-level contract issue.
+
+Issue:
+- Confirmed release-blocking normative contradiction. The schema-versioning section says receivers encountering a newer version than they support MUST NOT silently process the record. But the receiver-conformance section then says receivers SHOULD tolerate unknown optional fields and certain unknown enum values when `schema_version` names a newer MINOR of the same MAJOR.
+- Those two rules are pulling in opposite directions for the same case.
+
+Evidence:
+- `openqual/schemas/README.md:479-483` says a receiver encountering an unknown or newer version MUST NOT silently process the record.
+- `openqual/schemas/README.md:497-500` says newer MINOR versions are backward-compatible additions.
+- `openqual/schemas/README.md:590-595` says a receiver SHOULD tolerate unknown optional fields and some unknown enum values when `schema_version` names a newer MINOR of the same MAJOR.
+
+Recommended fix:
+- Pick one authoritative policy and propagate it consistently:
+- Option A:
+  strict version gating. Keep the MUST-NOT-process rule for any unsupported newer MINOR and remove/soften the SHOULD-tolerate language.
+- Option B:
+  semver-forward compatibility within a MAJOR. Allow receivers to process newer MINOR records when they can safely ignore unknown optional fields, and rewrite the receiver-behavior section accordingly.
+- My recommendation:
+  choose Option B if the project wants semver to mean what readers expect. If you choose Option A, the current MINOR-language should be tightened so it does not imply practical forward compatibility.
+
+### 2. Taskbook still lacks a top-level `source` field even though provenance is now a core principle and the worked example uses one
+Affected extracted file(s):
+- `openqual/schemas/taskbook.md`
+- `openqual/dart/taskbook.dart`
+- `openqual/js/taskbook.js`
+- `openqual/examples/taskbook_example.md`
+
+Relevant source file(s):
+- No direct source analogue; this is a standards-design consistency issue.
+
+Issue:
+- Confirmed release-blocking portability/provenance gap. OpenQual now explicitly centers provenance as a first-class part of the standard, and `Certification` has a top-level `source` field. `Taskbook` does not.
+- The worked `Taskbook` example already includes a top-level `source`, which means the example has outrun the published model and both reference implementations.
+
+Evidence:
+- `openqual/schemas/README.md:49-69` frames provenance as part of the standard’s core identity and scope.
+- `openqual/schemas/taskbook.md:11-30` defines the `Taskbook` fields and does not include `source`.
+- `openqual/dart/taskbook.dart:33-52` and `openqual/js/taskbook.js:36-57` likewise have no top-level `source`.
+- `openqual/examples/taskbook_example.md:532-535` includes a top-level `source` on the example `Taskbook`.
+
+Recommended fix:
+- Add `source: Source?` to `Taskbook` in the schema and both bindings.
+- This would bring `Taskbook` in line with:
+  the project’s stated “Structure + Semantics + Provenance” principle,
+  the `Certification` root shape,
+  and the already-published worked example.
+- If you intentionally do not want `Taskbook` roots to carry provenance, then the example must be corrected and the provenance principle should be phrased more narrowly. I do not recommend that direction.
+
+## Defer Safely
+
+### 3. UTC-only reference implementations are acceptable for v0.1 because the limitation is documented, but this will matter quickly in production
+Affected extracted file(s):
+- `openqual/schemas/certification.md`
+- `openqual/schemas/README.md`
+- `openqual/dart/certification.dart`
+- `openqual/js/certification.js`
+
+Relevant source file(s):
+- No direct source analogue; this is a standard/reference-implementation tradeoff.
+
+Issue:
+- Safe to defer for release. The standard now defines a two-step timezone cascade for day-granularity certification validity, but the reference implementations only implement the UTC fallback.
+- This is acceptable because the limitation is explicitly documented and the conformance section calls it out. It does, however, mean the reference implementations are examples of conformant fallback behavior, not complete production-grade validity evaluators for issuer-local timezones.
+
+Evidence:
+- `openqual/schemas/certification.md:99-132` defines the cascade and explicitly documents the standard-library-only UTC fallback in the reference implementations.
+- `openqual/schemas/README.md:617` repeats that UTC-only implementations are conformant for step 2 when they document the limitation.
+- `openqual/dart/certification.dart:63-69` and `openqual/js/certification.js:66-75` document the same limitation.
+
+Recommended fix:
+- No change required before `v0.1`.
+- When you move toward a packaged/reference-consumer story, consider a serialization/adapter layer or companion utilities that can honor `issuing_timezone` with a real timezone library.
+
+### 4. The deferred backlog areas named in the request do not currently create inconsistency
+Affected extracted file(s):
+- `openqual/schemas/README.md`
+- `openqual/schemas/certification.md`
+- `openqual/schemas/task_type_config.md`
+
+Relevant source file(s):
+- None; this is about deferred scope posture.
+
+Issue:
+- No current inconsistency found from deferring:
+  cross-credential relationship modeling, or
+  equivalent-cert handling in requirements.
+- The current spec remains internally coherent without them.
+
+Evidence:
+- `openqual/schemas/certification.md` is complete enough to represent a credential, its status, renewal state, and earned-via lineage without needing relationship modeling.
+- `TaskTypeCertConfig` still works as a simple single-cert requirement in the current taskbook model.
+- No reviewed file assumes reciprocity/equivalency machinery already exists.
+
+Recommended fix:
+- Safe to defer as planned.
+- If `AcceptedCertType` lands before release, it should be treated as a focused additive change rather than reopening the broader relationship-modeling problem.
+
+## Pass 4 Summary
+
+### Release readiness
+- Very close.
+- The framing, modeling direction, and documentation quality are now strong enough that the remaining concerns are specific and fixable, not structural.
+
+### Fix before tag
+- Resolve the schema-versioning / receiver-conformance contradiction for newer MINOR versions.
+- Add top-level `source` to `Taskbook`, or explicitly narrow the provenance model and correct the example. The cleaner path is to add the field.
+
+### Safe to defer
+- Production-grade timezone resolution beyond the documented UTC fallback.
+- The two explicitly deferred backlog areas named in the request.
+
+### Final impression for this pass
+- OpenQual now reads as a thoughtful, usable, and increasingly trustworthy project.
+- The center of gravity is much clearer, the org cluster made the model more self-contained, and the worked examples are doing real interoperability work rather than acting as ornamentation.
