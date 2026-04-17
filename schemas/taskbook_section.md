@@ -18,7 +18,7 @@ of the book-level policy and threshold.
 | `completion` | `CompletionState` | Yes | Owner completion marker for the section. |
 | `tasks` | `List<TaskbookTask>` | Yes | Ordered by `TaskbookTask.order`. May be empty. |
 | `signoff_policy_override` | `List<SignoffPolicy>` | Yes | Signoff policies for this section. Overrides the book-level policy when non-empty or when the book's `signoff_policy_cascades` is `false`. |
-| `signoffs_require_all` | `bool` | Yes | When `true`, all policies in `signoff_policy_override` must be completed. Defaults to `true`. |
+| `signoffs_require_all` | `bool` | Yes | When `true`, all policies in `signoff_policy_override` MUST be completed. Defaults to `true`. |
 | `signoff_policy_cascades` | `bool` | Yes | When `true`, this section's signoff policy also applies to child tasks that have no override. Defaults to `false`. |
 | `scoring_config` | `SectionScoringConfig?` | No | Section-level scoring threshold. See below. |
 | `scoring_summary` | `SectionScoringSummary?` | No | Denormalized scoring totals. Recomputed by `computeStatus`. |
@@ -82,7 +82,7 @@ enum).
 
 "Signoffs OK" means: no policies (`signoff_policy_override` is empty)
 → OK; otherwise, if `signoffs_require_all`, every policy's `completed`
-must be `true`; if not, at least one policy's `completed` must be
+MUST be `true`; if not, at least one policy's `completed` MUST be
 `true`.
 
 ### `TaskbookSection.computeProgress() → double`
@@ -95,7 +95,7 @@ Otherwise returns the arithmetic mean of child tasks' `progress`, or
 
 - The `min_passing_percentage > 1.0` auto-correction is a guard against
   users entering `70` when they meant `0.70`. A conforming
-  implementation should log a warning and divide by 100.
+  implementation SHOULD log a warning and divide by 100.
 - `scoring_config` is independent of the book-level
   `evaluation_config` — a section may have a stricter threshold than
   the book.

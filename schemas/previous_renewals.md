@@ -61,7 +61,7 @@ requirements as it goes.
 ## Implementation note
 
 The published implementation clamps the final `certification_progress`
-to `[0.0, 1.0]`. Callers may rely on this invariant.
+to `[0.0, 1.0]`. Callers MAY rely on this invariant.
 
 ## Notes
 

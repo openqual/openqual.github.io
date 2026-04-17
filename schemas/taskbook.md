@@ -19,7 +19,7 @@ book-level evaluation scoring.
 | `assignment` | `TaskbookAssignment?` | No | Assignee, evaluator, and host. |
 | `sections` | `List<TaskbookSection>` | Yes | Ordered by `TaskbookSection.order`. May be empty. |
 | `signoff_policy` | `List<SignoffPolicy>` | Yes | Book-level signoff policies. May be empty. |
-| `signoffs_require_all` | `bool` | Yes | When `true`, all policies in `signoff_policy` must be completed; when `false`, any one suffices. Defaults to `true`. |
+| `signoffs_require_all` | `bool` | Yes | When `true`, all policies in `signoff_policy` MUST be completed; when `false`, any one suffices. Defaults to `true`. |
 | `signoff_policy_cascades` | `bool` | Yes | When `true`, the book's signoff policy also applies to sections and tasks that have no override. Defaults to `false`. |
 | `attachments` | `List<Attachment>` | Yes | May be empty. |
 | `notes` | `String?` | No | Free-form notes. |

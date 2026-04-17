@@ -4,7 +4,7 @@ Authoritative portable record of a completed signoff. The `SignoffPolicy`
 configures *who may* sign; `SignoffRecord` captures *who did*.
 
 OpenQual compliance requires storing a `SignoffRecord` for each
-completed signoff. This record must not be modified after creation —
+completed signoff. This record MUST NOT be modified after creation —
 it is an audit trail.
 
 ## Fields
@@ -21,7 +21,7 @@ it is an audit trail.
 - All fields are captured at the moment of signing and frozen.
   Implementations MUST NOT mutate the `signatory` snapshot if the
   signer's display name, contact, or memberships change later.
-- `signed_at` **must** equal the `completion_timestamp` on the
+- `signed_at` MUST equal the `completion_timestamp` on the
   corresponding `SignoffPolicy`. See the signing contract in
   `signoff_policy.md`.
 

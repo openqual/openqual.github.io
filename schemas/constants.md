@@ -6,7 +6,7 @@ Shared constants published as part of the OpenQual standard.
 
 The standard sentinel timestamp used wherever a field requires a
 concrete `DateTime` but the conceptual meaning is "no expiration" or
-"far future." Implementations that need such a sentinel must use this
+"far future." Implementations that need such a sentinel MUST use this
 value rather than inventing their own.
 
 **Value:** `2199-12-31T00:00:00Z` (UTC).
@@ -27,7 +27,7 @@ backend storage layers; `2199-12-31` avoids that class of issue.
 
 **Compliance:** treating a `DateTime` equal to `neverExpireDate` as a
 sentinel (rather than a literal calendar date) is expected behavior.
-Implementations must not silently round, truncate, or normalize this
+Implementations MUST NOT silently round, truncate, or normalize this
 value to a different instant.
 
 ## `schemaVersion`

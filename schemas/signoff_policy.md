@@ -34,7 +34,7 @@ Pure. Returns whether the given user is eligible to sign this policy.
 - `taskbook_owner_id` — the user ID of the taskbook's owner/assignee;
   used only when `type = this_user`.
 - `org_memberships` — a map from organization `canonical_id` to the
-  list of `OrgRoles` the user holds in that organization. Keys must
+  list of `OrgRoles` the user holds in that organization. Keys MUST
   match the `source.canonical_id` of organizations the user is a
   member of; see "Matching organizations" below for the full matching
   contract. For example `{"org_abc": [OrgRoles.member, OrgRoles.officer]}`.
@@ -50,7 +50,7 @@ Pure. Returns whether the given user is eligible to sign this policy.
   reads `source.canonical_id` and looks it up in `org_memberships`.
   Returns `true` if any lookup succeeds and the user's roles in that
   org satisfy `allowed_roles` (empty `allowed_roles` means any
-  membership qualifies; non-empty means the user's roles must
+  membership qualifies; non-empty means the user's roles MUST
   intersect `allowed_roles`). See "Matching organizations" for the
   equality rules and how un-sourced snapshots are handled.
 
@@ -154,7 +154,7 @@ against the user's memberships follows these rules:
 
 A `SignoffPolicy` transitions from unsigned to signed exactly once.
 The following three state changes constitute a single logical write
-and must be persisted together:
+and MUST be persisted together:
 
 1. `completed` is set to `true`.
 2. `completion_timestamp` is set to the moment of signing.
@@ -162,16 +162,16 @@ and must be persisted together:
 
 **Invariants of a compliant signed policy.** When `completed = true`:
 
-- `completion_timestamp` must be non-null.
-- `signoff_record` must be non-null.
-- `signoff_record.signed_at` must equal `completion_timestamp`.
-- The signer recorded in `signoff_record.signatory` must have
+- `completion_timestamp` MUST be non-null.
+- `signoff_record` MUST be non-null.
+- `signoff_record.signed_at` MUST equal `completion_timestamp`.
+- The signer recorded in `signoff_record.signatory` MUST have
   satisfied eligibility at the moment of signing — per either
   `isEligible` or `isEligibleFor`. Eligibility at read time is not
   required — users can lose membership without invalidating past
   signatures.
 
-**Invalid states.** Readers must treat the following as non-compliant
+**Invalid states.** Readers MUST treat the following as non-compliant
 and either reject the data or surface it as corrupt:
 
 - `completed = true` with `signoff_record = null`.
@@ -183,12 +183,12 @@ and either reject the data or surface it as corrupt:
 
 **Unsigning / revocation.** Reverting a signed policy is out of scope
 for OpenQual v0.1. `SignoffRecord` is frozen by its own invariants;
-applications that need to revoke a signature should model that as a
+applications that need to revoke a signature SHOULD model that as a
 separate audit event at the application layer.
 
 **Legacy data.** Implementations migrating from pre-OpenQual schemas
 may encounter `completed = true` with no `signoff_record`. Such data
-is not compliant with v0.1. Migrations should either synthesize a
+is not compliant with v0.1. Migrations SHOULD either synthesize a
 best-effort `SignoffRecord` from available fields (e.g. build the
 `signatory` `PersonSnapshot` from the source apps' `completed_by_name`
 and `completed_by_ref`, and use the policy's last-modified timestamp
@@ -198,7 +198,7 @@ for `signed_at`) or mark the policy as unsigned.
 
 - `org_officers` and `org_admins`, observed in the source eligibility
   function, are **not** first-class policy types in v0.1. A policy that
-  restricts signing to officers or admins of an org should use
+  restricts signing to officers or admins of an org SHOULD use
   `type = org_members` with `allowed_roles = [OrgRoles.officer]` or
-  `allowed_roles = [OrgRoles.admin]`. Values in `allowed_roles` must
+  `allowed_roles = [OrgRoles.admin]`. Values in `allowed_roles` MUST
   come from the `OrgRoles` enum.

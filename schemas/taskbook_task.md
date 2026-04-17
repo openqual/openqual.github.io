@@ -20,7 +20,7 @@ a reference to a nested taskbook / skillsheet / certification.
 | `completion` | `CompletionState` | Yes | Owner completion marker. For `type = evaluation`, "complete" is driven by the evaluation result, not by this field; see `computeStatus`. |
 | `subtasks` | `List<TaskbookSubtask>` | Yes | Ordered by `TaskbookSubtask.order`. May be empty. |
 | `signoff_policy_override` | `List<SignoffPolicy>` | Yes | Signoff policies for this task. Overrides the section/book policy when non-empty. |
-| `signoffs_require_all` | `bool` | Yes | When `true`, all policies must be completed. Defaults to `true`. |
+| `signoffs_require_all` | `bool` | Yes | When `true`, all policies MUST be completed. Defaults to `true`. |
 | `attachments` | `List<Attachment>` | Yes | May be empty. |
 | `notes` | `String?` | No | Free-form notes. |
 
@@ -70,7 +70,7 @@ there are no subtasks.
 
 For `type = evaluation` with
 `type_config.evaluation_config.criteria.evaluation_type = scored`,
-`points_awarded` in the result must be clamped to the task's
+`points_awarded` in the result MUST be clamped to the task's
 `points_possible`. The reference implementation caps awarded points
-during `computeStatus` evaluation. Implementations must not persist a
+during `computeStatus` evaluation. Implementations MUST NOT persist a
 value greater than `points_possible`.

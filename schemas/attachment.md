@@ -17,7 +17,7 @@ attachments.
 | `content_encoding` | `String?` | No | Encoding of `content`. Required when `content` is set. The only value defined in v0.1 is `base64`; future versions may add others. |
 | `source` | `Source?` | No | Source attribution for this attachment, when it originated from a different source than the parent record. |
 
-**Invariant:** at least one of `path` or `content` must be present.
+**Invariant:** at least one of `path` or `content` MUST be present.
 A host-stored attachment has `path`; a portable/inline attachment has
 `content` + `content_encoding`; an attachment with both is valid and
 supports both access modes.
@@ -30,16 +30,16 @@ that produced it; OpenQual does not prescribe any format.
 
 Normative rules:
 
-- `path` must be stable for the lifetime of the attachment. Rewriting
+- `path` MUST be stable for the lifetime of the attachment. Rewriting
   it is a data migration, not a routine operation.
-- Clients must treat `path` as opaque. They must not parse it, infer
+- Clients MUST treat `path` as opaque. They MUST NOT parse it, infer
   structure from it, or construct URLs from it.
-- `path` is **not** a dereferenceable URL. It must not be used
+- `path` is **not** a dereferenceable URL. It MUST NOT be used
   directly as a hyperlink target. In particular, short-lived or
-  signed download URLs must not be persisted in this field.
+  signed download URLs MUST NOT be persisted in this field.
 - Producing a dereferenceable URL from a `path` (signing, proxying,
   or otherwise resolving) is a separate host-side operation that
-  OpenQual does not specify. A conforming implementation may expose
+  OpenQual does not specify. A conforming implementation MAY expose
   such an operation; it is outside the scope of the attachment
   record itself.
 
@@ -50,7 +50,7 @@ between systems), implementations **SHOULD** populate `content` and
 `content_encoding` for key attachments so the receiving system can
 reconstruct the file without access to the originating host's storage.
 
-Implementations storing records locally may omit `content` and rely on
+Implementations storing records locally MAY omit `content` and rely on
 `path` for storage resolution.
 
 ## Notes

@@ -13,9 +13,9 @@ naming in the source apps.
 
 ## Invariants
 
-- If `complete` is `false`, `completed_at` must be `null`.
-- If `complete` is `true`, `completed_at` should be set. Implementations
-  may tolerate a missing `completed_at` for legacy data but should not
+- If `complete` is `false`, `completed_at` MUST be `null`.
+- If `complete` is `true`, `completed_at` SHOULD be set. Implementations
+  MAY tolerate a missing `completed_at` for legacy data but MUST NOT
   write `complete = true` without also setting `completed_at`.
 
 ## Methods

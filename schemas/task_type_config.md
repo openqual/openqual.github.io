@@ -2,7 +2,7 @@
 
 Polymorphic configuration for a `TaskbookTask`. Exactly one of
 `evaluation_config`, `taskbook_config`, `skillsheet_config`, or
-`cert_config` should be populated, matching the task's `type`
+`cert_config` SHOULD be populated, matching the task's `type`
 discriminator.
 
 ## Fields
@@ -48,7 +48,7 @@ discriminator.
 |-------|------|----------|-------------|
 | `display_name` | `String?` | No | Snapshot display name of the referenced taskbook template, frozen at reference time. |
 | `source` | `Source?` | No | Source attribution. `canonical_id` identifies the template in the originating system. |
-| `require_complete` | `bool` | Yes | When `true`, the referenced taskbook must have `status = complete` for this task to count as done. Defaults to `true`. |
+| `require_complete` | `bool` | Yes | When `true`, the referenced taskbook MUST have `status = complete` for this task to count as done. Defaults to `true`. |
 
 ### `TaskTypeSkillsheetConfig`
 
@@ -66,7 +66,7 @@ Identical shape to `TaskTypeTaskbookConfig`.
 |-------|------|----------|-------------|
 | `display_name` | `String?` | No | Snapshot display name of the required certification type. |
 | `source` | `Source?` | No | Source attribution. `canonical_id` identifies the cert type. |
-| `require_active` | `bool` | Yes | When `true`, the user must hold a currently-valid instance of the cert (see `Certification.isCurrentlyValid`). Defaults to `true`. |
+| `require_active` | `bool` | Yes | When `true`, the user MUST hold a currently-valid instance of the cert (see `Certification.isCurrentlyValid`). Defaults to `true`. |
 
 ## Notes
 

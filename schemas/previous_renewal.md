@@ -17,7 +17,7 @@ existed at the moment the renewal cycle closed.
 
 ## Invariants
 
-- A `PreviousRenewal` must not be modified after creation. Subsequent
+- A `PreviousRenewal` MUST NOT be modified after creation. Subsequent
   renewal cycles add new `PreviousRenewal` entries; they never mutate
   existing ones.
 - `renewal_progress_at_archiving.requirements_version` pins the version

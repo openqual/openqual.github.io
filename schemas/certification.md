@@ -171,13 +171,14 @@ for how they interact:
   dates.** `active` is an explicit affirmation ("the status has been
   checked and nothing administrative applies") but it does not
   override a past `expiration_date`.
-- **Producer-set vs. receiver-inferred.** Producers should set `status`
-  when they have authoritative knowledge of an administrative state
-  (revocation, suspension, explicit expiration marking). Receivers
-  MUST NOT set or backfill `status` on a record from another
-  producer — it is part of the record's audit trail. Receivers MAY
-  compute their own view of validity via `isCurrentlyValid`, which
-  combines `status` and date signals per the logic above.
+- **Producer-set vs. receiver-inferred.** Producers SHOULD set
+  `status` when they have authoritative knowledge of an
+  administrative state (revocation, suspension, explicit expiration
+  marking). Receivers MUST NOT set or backfill `status` on a record
+  from another producer — it is part of the record's audit trail.
+  Receivers MAY compute their own view of validity via
+  `isCurrentlyValid`, which combines `status` and date signals per
+  the logic above.
 - **Disagreement handling.** `active` + past `expiration_date` is not
   a contradiction — the cert is expired by dates, and the status
   field records that no administrative invalidation applies. A future
@@ -188,13 +189,12 @@ for how they interact:
 
 - `cert_document` is a first-class field, not an element of
   `attachments`. The digitized credential is semantically distinct
-  from supporting documents. Implementations should use this field
+  from supporting documents. Implementations SHOULD use this field
   specifically when the question is "show me the cert."
-- When exporting a portable `Certification`, implementations
-  **should** populate `cert_document.content` (inline base64) so the
-  receiving system gets the actual credential without needing access
-  to the originating system's storage. See `attachment.md` → Inline
-  content.
+- When exporting a portable `Certification`, implementations SHOULD
+  populate `cert_document.content` (inline base64) so the receiving
+  system gets the actual credential without needing access to the
+  originating system's storage. See `attachment.md` → Inline content.
 - `instructor` reuses `PersonSnapshot` — the same type as `holder`.
   Every person-shaped slot across the standard (holder, instructor,
   assignee, evaluator, signatory) uses `PersonSnapshot`; the parent

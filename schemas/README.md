@@ -209,7 +209,9 @@ v0.1.
 ## Enums
 
 The standard defines the following enums. They are exhaustive; third-party
-implementations must treat unknown values as errors.
+implementations MUST treat unknown values as errors, except where an
+`other` escape hatch is published on the enum (see `Discipline` and
+`CertClassification`).
 
 ### `WorkItemStatus`
 
@@ -251,7 +253,7 @@ additional causes unrelated to evaluation outcome (see `WorkItemStatus`).
 
 `org_officers` and `org_admins` are expressible as `org_members` with
 specific `allowedRoles` values. They are reserved for a future version
-and should not be implemented.
+and MUST NOT be implemented.
 
 ### `TaskTypes`
 
@@ -412,13 +414,13 @@ or the membership lifecycle (invited, requested, accepted). A richer
 `Organization` class covering these concerns is planned for v0.2. See
 Roadmap below.
 
-What v0.1 does require of a compliant host: it must be able to answer,
+What v0.1 does require of a compliant host: it MUST be able to answer,
 for any user, "what roles does this user hold in which orgs?" —
 represented as `Map<orgId, List<OrgRoles>>` and passed into
 `SignoffPolicy.isEligible`. The role vocabulary is fixed by
-`OrgRoles`; memberships returned by the host must contain only values
-from that enum. A user who is not an accepted member of an org must
-not appear in that map for the org in question.
+`OrgRoles`; memberships returned by the host MUST contain only values
+from that enum. A user who is not an accepted member of an org MUST
+NOT appear in that map for the org in question.
 
 Richer organization modeling — the `Organization` class itself, the
 membership lifecycle, stations and other subunits, and the separation
@@ -444,13 +446,22 @@ certifying agencies — is planned for v0.2. See Roadmap below.
   granularity via a deterministic timezone cascade. See
   `certification.md` → "Calendar date semantics" for the full contract.
 - **Optional fields:** a `?` suffix on a type means nullable/optional.
-  Implementations must accept missing or null values for these fields.
+  Implementations MUST accept missing or null values for these fields.
 - **Required fields:** everything without a `?` is required. When a
   required field is missing from serialized input, an implementation
-  must raise an error.
+  MUST raise an error.
 - **Zero side effects:** no method in this standard performs I/O. All
   methods are pure functions of the receiver's fields and their
   arguments.
+- **Normative language:** the key words **MUST**, **MUST NOT**,
+  **SHALL**, **SHALL NOT**, **SHOULD**, **SHOULD NOT**, **MAY**, and
+  **REQUIRED** / **OPTIONAL** are to be interpreted as described in
+  [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119). These keywords
+  appear in ALL-CAPS only when they are meant normatively; lowercase
+  use is plain English. Sections or blocks labeled "normative" state
+  requirements implementations are expected to honor; blocks labeled
+  "notes," "implementation notes," or "guidance" are advisory and do
+  not use RFC 2119 keywords.
 
 ## Schema versioning
 

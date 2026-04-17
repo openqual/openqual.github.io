@@ -57,7 +57,7 @@ catalog.
 ## Multi-source modification (v0.1 behavioral guideline)
 
 When a portable record carrying provenance from one source is
-modified by another party, implementations **should** preserve the
+modified by another party, implementations SHOULD preserve the
 original `canonical_id` and `canonical_source` rather than
 overwriting them. If modifications are made, record them alongside
 the original provenance rather than replacing it.
@@ -70,7 +70,7 @@ version commitment is made.
 
 - Both fields are optional because a record may have no known
   origin (e.g. manually entered data with no catalog binding).
-  Standards-compliant portable records **should** populate source
+  Standards-compliant portable records SHOULD populate source
   attribution when the origin is known, but omitting it is not a
   conformance violation.
 - What a receiving application does with source attribution —

@@ -99,7 +99,7 @@ pass/fail state. Threshold fields are populated only when
 `taskbook_evaluation_config.md` for the derivation.
 
 **Recompute trigger.** Implementations that cache `TaskbookSummary`
-must recompute on any write that changes a task's or section's
+MUST recompute on any write that changes a task's or section's
 `status`, a section's or task's `signoff_policy_override`, the book's
 `signoff_policy`, any policy's `completed` flag, or the book's
 `completion`. `last_modified` is set to the recomputation time.
