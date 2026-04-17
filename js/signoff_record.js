@@ -14,20 +14,21 @@
 
 'use strict';
 
+const { PersonSnapshot } = require('./person_snapshot');
+
 /**
  * Authoritative portable record of a completed signoff.
- * Immutable after creation.
+ * Immutable after creation. SignoffPolicy configures who may sign;
+ * this record captures who did sign.
  */
 class SignoffRecord {
   constructor({
-    signatoryId,
-    signatoryName,
+    signatory,
     signatoryRole = null,
     signedAt,
     policyType,
   }) {
-    this.signatoryId = signatoryId;
-    this.signatoryName = signatoryName;
+    this.signatory = signatory;
     this.signatoryRole = signatoryRole;
     this.signedAt = signedAt;
     this.policyType = policyType;

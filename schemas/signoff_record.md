@@ -11,17 +11,16 @@ it is an audit trail.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `signatory_id` | `String` | Yes | Opaque user ID of the signer. |
-| `signatory_name` | `String` | Yes | Display name captured at the time of signing. Preserved even if the user later renames or deactivates. |
-| `signatory_role` | `String?` | No | Snapshot of the signer's relevant role at the time of signing, when applicable (e.g. `officer` for an `org_members` policy scoped by `allowed_roles`). |
+| `signatory` | `PersonSnapshot` | Yes | Frozen identity of the signer at the moment of signing. See `person_snapshot.md`. |
+| `signatory_role` | `OrgRoles?` | No | The role that qualified the signer, when applicable. Populated for `org_members` policies with non-empty `allowed_roles`. Null otherwise. |
 | `signed_at` | `DateTime` | Yes | Timestamp of the signature. |
 | `policy_type` | `SignoffPolicyType` | Yes | The `SignoffPolicy.type` in effect at the moment of signing. |
 
 ## Invariants
 
 - All fields are captured at the moment of signing and frozen.
-  Implementations must not backfill or mutate `signatory_name` if the
-  user's display name changes later.
+  Implementations MUST NOT mutate the `signatory` snapshot if the
+  signer's display name, contact, or memberships change later.
 - `signed_at` **must** equal the `completion_timestamp` on the
   corresponding `SignoffPolicy`. See the signing contract in
   `signoff_policy.md`.
@@ -33,3 +32,11 @@ it is an audit trail.
   authorization rules (who may sign) live on the policy and the
   captured identity of who did sign lives on a record that cannot be
   edited.
+- The `signatory` field uses `PersonSnapshot`, the same type used for
+  holders, instructors, evaluators, and assignees elsewhere in the
+  standard. Identity for cross-system reference lives in
+  `signatory.source`.
+- `signatory_role` is a typed `OrgRoles` value (or null), not a
+  free-form string. It records the specific role that satisfied the
+  policy's eligibility check at signing time — useful for audit
+  readability when a user holds multiple roles.

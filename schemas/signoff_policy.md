@@ -165,10 +165,11 @@ and must be persisted together:
 - `completion_timestamp` must be non-null.
 - `signoff_record` must be non-null.
 - `signoff_record.signed_at` must equal `completion_timestamp`.
-- The signer recorded in `signoff_record` must have satisfied
-  `isEligible(signoff_record.signatory_id, …)` at the moment of
-  signing. Eligibility at read time is not required — users can lose
-  membership without invalidating past signatures.
+- The signer recorded in `signoff_record.signatory` must have
+  satisfied eligibility at the moment of signing — per either
+  `isEligible` or `isEligibleFor`. Eligibility at read time is not
+  required — users can lose membership without invalidating past
+  signatures.
 
 **Invalid states.** Readers must treat the following as non-compliant
 and either reject the data or surface it as corrupt:
@@ -188,9 +189,10 @@ separate audit event at the application layer.
 **Legacy data.** Implementations migrating from pre-OpenQual schemas
 may encounter `completed = true` with no `signoff_record`. Such data
 is not compliant with v0.1. Migrations should either synthesize a
-best-effort `SignoffRecord` from available fields (e.g. the source
-apps' `completed_by_name` and the policy's last-modified timestamp)
-or mark the policy as unsigned.
+best-effort `SignoffRecord` from available fields (e.g. build the
+`signatory` `PersonSnapshot` from the source apps' `completed_by_name`
+and `completed_by_ref`, and use the policy's last-modified timestamp
+for `signed_at`) or mark the policy as unsigned.
 
 ## Notes
 

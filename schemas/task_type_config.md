@@ -77,6 +77,7 @@ Identical shape to `TaskTypeTaskbookConfig`.
 - `evaluated_by` is an opaque string ID. Resolution to the referenced
   entity is the host application's responsibility.
 - The `display_name` + `source` pattern on reference configs follows
-  the same snapshot principle as `SignoffRecord.signatory_name` and
-  `PersonSnapshot.display_name`: the name is frozen at reference time
-  so the record is meaningful without external lookups.
+  the same snapshot principle used throughout the standard (see
+  `PersonSnapshot.display_name`, `OrganizationSnapshot.display_name`):
+  the name is frozen at reference time so the record is meaningful
+  without external lookups.

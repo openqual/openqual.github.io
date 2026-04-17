@@ -57,9 +57,9 @@ The scope is intentionally narrow:
 ## Notes
 
 - All fields are captured at a point in time and should not be updated
-  if the person's details change later. This follows the same
-  principle as `SignoffRecord.signatory_name` — the snapshot preserves
-  the identity as it was at the moment of capture.
+  if the person's details change later. The snapshot preserves the
+  identity as it was at the moment of capture. `SignoffRecord.signatory`
+  follows the same principle — once written, it is frozen.
 - `Source.canonical_id` serves as the person's identifier in the
   originating system. No separate `user_id` field is needed; systems
   that require a stable cross-reference should use `source`.

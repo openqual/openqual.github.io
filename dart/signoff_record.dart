@@ -13,21 +13,20 @@
 // limitations under the License.
 
 import 'enums.dart';
+import 'person_snapshot.dart';
 
 /// Authoritative portable record of a completed signoff.
 ///
 /// Immutable after creation. The [SignoffPolicy] configures who may sign;
 /// this record captures who did sign.
 class SignoffRecord {
-  final String signatoryId;
-  final String signatoryName;
-  final String? signatoryRole;
+  final PersonSnapshot signatory;
+  final OrgRoles? signatoryRole;
   final DateTime signedAt;
   final SignoffPolicyType policyType;
 
   const SignoffRecord({
-    required this.signatoryId,
-    required this.signatoryName,
+    required this.signatory,
     this.signatoryRole,
     required this.signedAt,
     required this.policyType,
