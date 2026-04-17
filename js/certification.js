@@ -39,6 +39,7 @@ class Certification {
     status = null,
     instructor = null,
     certDocument = null,
+    earnedViaTaskbook = null,
     renewalProgress = null,
     previousRenewals = null,
     attachments = [],
@@ -56,6 +57,7 @@ class Certification {
     this.status = status;
     this.instructor = instructor;
     this.certDocument = certDocument;
+    this.earnedViaTaskbook = earnedViaTaskbook;
     this.renewalProgress = renewalProgress;
     this.previousRenewals = previousRenewals;
     this.attachments = Object.freeze([...attachments]);
@@ -106,4 +108,18 @@ class Certification {
   }
 }
 
-module.exports = { Certification };
+/**
+ * Snapshot of a specific taskbook completion that earned a Certification.
+ * Instance-level — records what happened, not what a cert type is supposed
+ * to be earned by. See schemas/certification.md → "Earned-via linkage".
+ */
+class EarnedViaTaskbook {
+  constructor({ taskbookTitle, completedAt, source = null }) {
+    this.taskbookTitle = taskbookTitle;
+    this.completedAt = completedAt;
+    this.source = source;
+    Object.freeze(this);
+  }
+}
+
+module.exports = { Certification, EarnedViaTaskbook };

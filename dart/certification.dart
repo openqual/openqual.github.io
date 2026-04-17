@@ -34,6 +34,7 @@ class Certification {
   final CertStatus? status;
   final PersonSnapshot? instructor;
   final Attachment? certDocument;
+  final EarnedViaTaskbook? earnedViaTaskbook;
   final RenewalProgress? renewalProgress;
   final PreviousRenewals? previousRenewals;
   final List<Attachment> attachments;
@@ -52,6 +53,7 @@ class Certification {
     this.status,
     this.instructor,
     this.certDocument,
+    this.earnedViaTaskbook,
     this.renewalProgress,
     this.previousRenewals,
     this.attachments = const [],
@@ -103,4 +105,20 @@ class Certification {
     final u = dt.toUtc();
     return DateTime.utc(u.year, u.month, u.day);
   }
+}
+
+/// Snapshot of a specific taskbook completion that earned a
+/// [Certification]. Instance-level — records what happened, not what
+/// a cert type is supposed to be earned by. See
+/// schemas/certification.md → "Earned-via linkage".
+class EarnedViaTaskbook {
+  final String taskbookTitle;
+  final DateTime completedAt;
+  final Source? source;
+
+  const EarnedViaTaskbook({
+    required this.taskbookTitle,
+    required this.completedAt,
+    this.source,
+  });
 }

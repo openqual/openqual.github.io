@@ -512,6 +512,12 @@ v0.1" above for the full deferred / out-of-scope split.
   (invited, requested, accepted), and subunits such as stations.
   v0.1 publishes `OrganizationSnapshot` as the snapshot-shaped portable
   identity type; v0.2 adds the lifecycle and membership layer.
+- **Type-side earned-via linkage.** v0.1 captures earned-via as an
+  instance-level snapshot on `Certification` (see
+  `certification.md` → "Earned-via linkage"). A type-level statement
+  ("this cert type is earned by template X") is deferred to a future
+  version — those claims are catalog/governance territory and may
+  involve multiple earning paths per cert type.
 - **Additional `RequirementUnits`** (CE credits, sessions, contact
   hours). The current `hours`-only set will expand once the target
   disciplines' measurement conventions are agreed.

@@ -24,11 +24,26 @@ rationale.
 | `status` | `CertStatus?` | No | Administrative status. When set to `revoked`, `suspended`, or `expired`, the certification is not currently valid regardless of dates. Omit or set to `active` when no administrative invalidity applies. See "Status and validity" below. |
 | `instructor` | `PersonSnapshot?` | No | Frozen identity of the instructor who conducted the training or examination. |
 | `cert_document` | `Attachment?` | No | The digitized certification itself — a PDF, image, or scan of the actual credential. Distinct from supplementary `attachments`. |
+| `earned_via_taskbook` | `EarnedViaTaskbook?` | No | Snapshot of the taskbook completion that earned this certification, when applicable. Optional — a certification may have been earned by other paths (external exam, classroom-only program, grandfathered credit) that v0.1 does not model. See "Earned-via linkage" below and the `EarnedViaTaskbook` nested type. |
 | `renewal_progress` | `RenewalProgress?` | No | In-flight progress against the current renewal cycle. Uses the existing `RenewalProgress` type. |
 | `previous_renewals` | `PreviousRenewals?` | No | Archived history of completed renewal cycles. |
 | `attachments` | `List<Attachment>` | Yes | Supplementary documents — training records, receipts, supporting evidence. May be empty. |
 | `notes` | `String?` | No | Free-form notes. |
 | `source` | `Source?` | No | Source attribution for this certification record. Per provenance inheritance, nested types (`holder`, `cert_type`, `instructor`) inherit this source unless they carry their own. |
+
+## Nested types
+
+### `EarnedViaTaskbook`
+
+Snapshot of a specific taskbook completion that earned this
+certification. Instance-level — it records what happened, not what a
+cert type is *supposed* to be earned by.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `taskbook_title` | `String` | Yes | Title of the taskbook at the moment of completion. Frozen snapshot. |
+| `completed_at` | `DateTime` | Yes | Instant the taskbook was completed (all required signoffs present and the owner marked it complete). |
+| `source` | `Source?` | No | Provenance pointer to the taskbook instance in its originating system. When null, inherits from the parent `Certification.source` per the provenance inheritance rule (see `source.md`). |
 
 ## Methods
 
@@ -115,6 +130,30 @@ cascade (UTC) correctly and fall back to UTC when `issuing_timezone`
 is present but cannot be resolved without external dependencies.
 Implementers deploying into production SHOULD add timezone handling
 (e.g., via a runtime timezone library) to honor step 1 of the cascade.
+
+## Earned-via linkage
+
+`earned_via_taskbook` captures the instance-level fact that a
+specific taskbook completion produced this specific certification.
+It is a snapshot, consistent with how the rest of the standard handles
+portable identity — the title is frozen, the completion instant is
+frozen, and `source` provides a lookup path back to the taskbook in
+its originating system.
+
+**Why instance-side only in v0.1.** The "earns" relationship is
+fundamentally an instance-level fact: when a specific cert is
+produced, the system knows the specific taskbook it came from.
+Type-level claims ("this cert type IS earned by template X") are
+governance statements that vary across jurisdictions, can involve
+multiple earning paths (taskbook + exam + CE hours), and are
+better maintained in catalogs than frozen into each cert type. A
+future version may add a catalog-side type-linkage mechanism; for
+v0.1, only the instance-side snapshot is standardized.
+
+**Non-taskbook earning paths.** Certifications earned by external
+exam, classroom-only programs, grandfathered credit, or other
+paths outside a taskbook flow simply leave `earned_via_taskbook`
+null. Modeling those paths is deferred to a future version.
 
 ## Status and validity (normative)
 
