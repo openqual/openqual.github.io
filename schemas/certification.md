@@ -20,6 +20,7 @@ rationale.
 | `expiration_date` | `DateTime?` | No | When the certification expires. May be `neverExpireDate` for lifetime certs. Null means expiration is unknown or not applicable. |
 | `issued_cert_id` | `String?` | No | The certificate number or ID printed on the physical credential. |
 | `issuing_locality` | `String?` | No | Where the certification was issued, e.g. "Denver, CO" or "State of Colorado". Free-form string. |
+| `status` | `CertStatus?` | No | Administrative status. When set to `revoked`, `suspended`, or `expired`, the certification is not currently valid regardless of dates. Omit or set to `active` when no administrative invalidity applies. See "Status and validity" below. |
 | `instructor` | `PersonSnapshot?` | No | Frozen identity of the instructor who conducted the training or examination. |
 | `cert_document` | `Attachment?` | No | The digitized certification itself — a PDF, image, or scan of the actual credential. Distinct from supplementary `attachments`. |
 | `renewal_progress` | `RenewalProgress?` | No | In-flight progress against the current renewal cycle. Uses the existing `RenewalProgress` type. |
@@ -36,18 +37,50 @@ Pure. Returns `true` iff the certification is considered valid at the
 given instant.
 
 Logic:
-1. If `certification_date` is non-null and `now < certification_date`
+1. If `status` is `revoked`, `suspended`, or `expired` → `false`
+   (administrative or explicit invalidity overrides date logic).
+2. If `certification_date` is non-null and `now < certification_date`
    → `false` (cert has not yet taken effect).
-2. If `expiration_date` is null → `true` (no expiration known; assume
+3. If `expiration_date` is null → `true` (no expiration known; assume
    valid).
-3. If `expiration_date` equals `neverExpireDate` → `true` (lifetime
+4. If `expiration_date` equals `neverExpireDate` → `true` (lifetime
    cert).
-4. If `now < expiration_date` → `true`.
-5. Otherwise → `false`.
+5. If `now < expiration_date` → `true`.
+6. Otherwise → `false` (date-based expiration).
 
-This method evaluates validity dates only. Suspension, revocation, and
-other administrative states are not modeled in v0.1; see
-`OPEN_ISSUES.md` for the acknowledged future enhancement.
+`status = active` and `status = null` behave identically: both fall
+through to the date-based evaluation. `status = active` is an
+explicit affirmation, but it does not override a past
+`expiration_date`.
+
+## Status and validity (normative)
+
+`status` and the date fields (`certification_date`, `expiration_date`)
+are independent signals that both feed `isCurrentlyValid`. The rules
+for how they interact:
+
+- **`status` is optional.** A producer may omit it entirely; the
+  record is fully interpretable from dates alone.
+- **When `status` is set to `revoked`, `suspended`, or `expired`, the
+  certification is not currently valid** regardless of dates. These
+  are administrative or explicit signals that override date-based
+  inference.
+- **When `status` is `active` or absent, validity is determined by
+  dates.** `active` is an explicit affirmation ("the status has been
+  checked and nothing administrative applies") but it does not
+  override a past `expiration_date`.
+- **Producer-set vs. receiver-inferred.** Producers should set `status`
+  when they have authoritative knowledge of an administrative state
+  (revocation, suspension, explicit expiration marking). Receivers
+  MUST NOT set or backfill `status` on a record from another
+  producer — it is part of the record's audit trail. Receivers MAY
+  compute their own view of validity via `isCurrentlyValid`, which
+  combines `status` and date signals per the logic above.
+- **Disagreement handling.** `active` + past `expiration_date` is not
+  a contradiction — the cert is expired by dates, and the status
+  field records that no administrative invalidation applies. A future
+  version may introduce finer-grained administrative states (e.g.
+  probation); those will slot into the same pattern.
 
 ## Notes
 

@@ -347,6 +347,20 @@ parent type with a descriptive string.
 | `ski_patrol` | Ski patrol. |
 | `other` | Discipline not listed above; see `discipline_other`. |
 
+### `CertStatus`
+
+Administrative status of a `Certification`. Optional on the record.
+When set to `revoked`, `suspended`, or `expired`, `isCurrentlyValid`
+returns `false` regardless of dates. When absent or `active`,
+validity is determined by dates.
+
+| Value | Meaning |
+|-------|---------|
+| `active` | No administrative invalidity applies. Equivalent to the field being absent, but records an explicit affirmation. |
+| `suspended` | Temporarily invalid by administrative action. |
+| `revoked` | Permanently invalidated by administrative action. |
+| `expired` | Explicitly marked expired. Usually redundant with a past `expiration_date`, but useful when the producer knows the cert is expired and wants to record it unambiguously. |
+
 ### `CertClassification`
 
 Classification of a credential. Use `other` when the classification

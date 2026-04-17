@@ -117,6 +117,20 @@ const CertClassification = Object.freeze({
   OTHER: 'other',
 });
 
+// Administrative status of a Certification.
+//
+// Optional on the record. When present and set to REVOKED, SUSPENDED,
+// or EXPIRED, isCurrentlyValid returns false regardless of dates. When
+// absent or ACTIVE, isCurrentlyValid falls through to date-based
+// evaluation — the status field does not override date-based
+// expiration.
+const CertStatus = Object.freeze({
+  ACTIVE: 'active',
+  SUSPENDED: 'suspended',
+  REVOKED: 'revoked',
+  EXPIRED: 'expired',
+});
+
 // Authority roles a user may hold in an organization.
 //
 // These are authority roles only. Pre-membership states (e.g. pending
@@ -141,5 +155,6 @@ module.exports = {
   RequirementUnits,
   Discipline,
   CertClassification,
+  CertStatus,
   OrgRoles,
 };

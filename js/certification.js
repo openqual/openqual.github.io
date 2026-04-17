@@ -15,6 +15,7 @@
 'use strict';
 
 const { neverExpireDate, openqualSchemaVersion } = require('./constants');
+const { CertStatus } = require('./enums');
 
 class Certification {
   constructor({
@@ -25,6 +26,7 @@ class Certification {
     expirationDate = null,
     issuedCertId = null,
     issuingLocality = null,
+    status = null,
     instructor = null,
     certDocument = null,
     renewalProgress = null,
@@ -40,6 +42,7 @@ class Certification {
     this.expirationDate = expirationDate;
     this.issuedCertId = issuedCertId;
     this.issuingLocality = issuingLocality;
+    this.status = status;
     this.instructor = instructor;
     this.certDocument = certDocument;
     this.renewalProgress = renewalProgress;
@@ -52,10 +55,22 @@ class Certification {
 
   /**
    * Pure. Returns true iff the certification is valid at the given instant.
+   *
+   * See schemas/certification.md for the full rule. Summary:
+   *   1. status in {revoked, suspended, expired} -> false
+   *   2. certification_date in future -> false
+   *   3. no expiration or lifetime -> true
+   *   4. now before expiration -> true, else false
+   *
    * @param {Date} now
    * @returns {boolean}
    */
   isCurrentlyValid(now) {
+    if (this.status === CertStatus.REVOKED ||
+        this.status === CertStatus.SUSPENDED ||
+        this.status === CertStatus.EXPIRED) {
+      return false;
+    }
     if (this.certificationDate != null && now < this.certificationDate) return false;
     if (this.expirationDate == null) return true;
     if (this.expirationDate.getTime() === neverExpireDate.getTime()) return true;

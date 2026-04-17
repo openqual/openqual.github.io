@@ -15,6 +15,7 @@
 import 'attachment.dart';
 import 'cert_type.dart';
 import 'constants.dart';
+import 'enums.dart';
 import 'person_snapshot.dart';
 import 'previous_renewals.dart';
 import 'renewal_progress.dart';
@@ -29,6 +30,7 @@ class Certification {
   final DateTime? expirationDate;
   final String? issuedCertId;
   final String? issuingLocality;
+  final CertStatus? status;
   final PersonSnapshot? instructor;
   final Attachment? certDocument;
   final RenewalProgress? renewalProgress;
@@ -45,6 +47,7 @@ class Certification {
     this.expirationDate,
     this.issuedCertId,
     this.issuingLocality,
+    this.status,
     this.instructor,
     this.certDocument,
     this.renewalProgress,
@@ -55,7 +58,18 @@ class Certification {
   });
 
   /// Pure. Returns `true` iff the certification is valid at [now].
+  ///
+  /// See schemas/certification.md for the full rule. Summary:
+  ///   1. status in {revoked, suspended, expired} -> false
+  ///   2. certification_date in future -> false
+  ///   3. no expiration or lifetime -> true
+  ///   4. now before expiration -> true, else false
   bool isCurrentlyValid(DateTime now) {
+    if (status == CertStatus.revoked ||
+        status == CertStatus.suspended ||
+        status == CertStatus.expired) {
+      return false;
+    }
     if (certificationDate != null && now.isBefore(certificationDate!)) {
       return false;
     }

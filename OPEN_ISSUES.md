@@ -44,10 +44,12 @@ are published: `Certification`, `CertType`, `OrganizationSnapshot`,
   of custody, versioning) are acknowledged as a future enhancement
   with no specific version commitment.
 
-- **Suspension / revocation status on `Certification`.** 
-  `Certification.isCurrentlyValid` evaluates expiration dates only.
-  Administrative states (suspension, revocation, probation) are not
-  modeled in v0.1. Acknowledged for future enhancement.
+- **Finer-grained administrative states on `Certification`.** The
+  `CertStatus` enum (`active`, `suspended`, `revoked`, `expired`)
+  covers the core administrative states. Finer distinctions — e.g.
+  probation, conditional reinstatement, pending-review — are not
+  modeled in v0.1. They can be added via the same enum pattern in a
+  later version.
 
 ## 1. Book-level status computation — published in v0.1
 

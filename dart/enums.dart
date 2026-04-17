@@ -93,6 +93,15 @@ enum Discipline {
 /// parent type with a descriptive string.
 enum CertClassification { certification, license, other }
 
+/// Administrative status of a [Certification].
+///
+/// Optional on the record. When present and set to [revoked],
+/// [suspended], or [expired], `isCurrentlyValid` returns `false`
+/// regardless of dates. When absent or [active], `isCurrentlyValid`
+/// falls through to date-based evaluation — the status field does
+/// not override date-based expiration.
+enum CertStatus { active, suspended, revoked, expired }
+
 /// Authority roles a user may hold in an organization.
 ///
 /// These are authority roles only. Pre-membership states (e.g. pending
