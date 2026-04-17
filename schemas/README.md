@@ -637,6 +637,9 @@ method** — a pure-Consumer may not need `computeStatus`, and a
 read-only Receiver may not need `isEligibleFor`. The requirement is
 that when a method is exposed, its behavior matches the spec.
 
+For a condensed, copy-pasteable version of these requirements, see
+[`docs/implementer_checklist.md`](../docs/implementer_checklist.md).
+
 ### What is not prescribed
 
 OpenQual v0.1 does not prescribe:

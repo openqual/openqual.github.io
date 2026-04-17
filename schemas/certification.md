@@ -129,7 +129,10 @@ arbitrary IANA timezone conversion. They implement step 2 of the
 cascade (UTC) correctly and fall back to UTC when `issuing_timezone`
 is present but cannot be resolved without external dependencies.
 Implementers deploying into production SHOULD add timezone handling
-(e.g., via a runtime timezone library) to honor step 1 of the cascade.
+(e.g., via a runtime timezone library) to honor step 1 of the
+cascade. See [`docs/timezone_handling.md`](../docs/timezone_handling.md)
+for production guidance, per-language library pointers, and a Dart
+override sketch.
 
 ## Earned-via linkage
 
