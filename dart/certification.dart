@@ -54,6 +54,9 @@ class Certification {
 
   /// Pure. Returns `true` iff the certification is valid at [now].
   bool isCurrentlyValid(DateTime now) {
+    if (certificationDate != null && now.isBefore(certificationDate!)) {
+      return false;
+    }
     if (expirationDate == null) return true;
     if (expirationDate == neverExpireDate) return true;
     return now.isBefore(expirationDate!);

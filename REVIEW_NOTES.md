@@ -593,3 +593,169 @@ Recommended fix:
 - The main decision left is not a field-level cleanup problem; it is whether to:
   publish the missing required certification/identity/authority slice now,
   or narrow the formal v0.1 scope so the already-published slice can ship without contradiction.
+
+## Review Pass 3 — 2026-04-17
+
+Review scope for this pass:
+- Re-read prior review passes in `openqual/REVIEW_NOTES.md`.
+- Reviewed the Stage 7 certification slice additions and updates in `openqual/schemas/`, `openqual/dart/`, and `openqual/js/`.
+- Focused on internal consistency, the OpenQual Principle, provenance coverage, and the new `Certification.isCurrentlyValid()` method.
+
+Overall assessment:
+- Stage 7 materially strengthens the standard. The certification slice now makes the v0.1 scope feel much more self-sufficient and coherent.
+- The new types are generally consistent across schemas, Dart, and JS.
+- Source attribution is present on the main new portable record types and on the updated reference configs, which is the right direction for the “Structure + Semantics + Provenance” model.
+- The remaining issues are narrower than in earlier passes: one correctness issue in `Certification.isCurrentlyValid()`, one portability/provenance gap in `Attachment`, and two naming/docs issues worth tightening.
+
+## Important
+
+### 1. Certification.isCurrentlyValid() can mark a future-issued certification as currently valid
+Affected extracted file(s):
+- `openqual/schemas/certification.md`
+- `openqual/dart/certification.dart`
+- `openqual/js/certification.js`
+
+Relevant source file(s):
+- No direct source analogue; this is a new standard-level method added in Stage 7.
+
+Issue:
+- Confirmed correctness issue. The new method checks only `expiration_date`, so a certification with `certification_date` in the future is still considered currently valid as long as it is unexpired.
+- For a method named `isCurrentlyValid`, that is too permissive. A credential that has not yet taken effect should not read as “currently valid.”
+
+Evidence:
+- `openqual/schemas/certification.md:18-19` models both `certification_date` and `expiration_date`.
+- `openqual/schemas/certification.md:37-43` defines validity solely in terms of `expiration_date`.
+- `openqual/dart/certification.dart:55-59` implements the same expiration-only logic.
+- `openqual/js/certification.js:56-59` implements the same expiration-only logic.
+
+Recommended fix:
+- Update the method contract and both bindings so validity also respects the effective/start side:
+- Suggested rule:
+  if `certification_date` is non-null and `now < certification_date`, return `false`.
+- Then apply the existing expiration logic after that check.
+- This keeps the method pure and stylistically aligned with `SignoffPolicy.isEligible()` while making the semantics match the method name.
+
+### 2. Attachment now emphasizes inline portability, but still requires a host-local path even when inline content is sufficient
+Affected extracted file(s):
+- `openqual/schemas/attachment.md`
+- `openqual/dart/attachment.dart`
+- `openqual/js/attachment.js`
+- `openqual/schemas/certification.md`
+
+Relevant source file(s):
+- `_sources/taskbook/lib/backend/schema/structs/taskbook_attachment_struct.dart`
+
+Issue:
+- Confirmed OpenQual Principle issue. Stage 7 improved portability by adding inline `content`, but `Attachment.path` remains required even when `content` is present and fully sufficient to reconstruct the file.
+- That over-specifies a host-storage concern in the exact place where the standard is trying to be self-contained and portable.
+
+Evidence:
+- `openqual/schemas/attachment.md:12` makes `path` required.
+- `openqual/schemas/attachment.md:16-17` says `content` + `content_encoding` can make the attachment self-contained.
+- `openqual/schemas/attachment.md:42-48` explicitly encourages inline content for portable exports.
+- `openqual/schemas/certification.md:55-58` specifically encourages `cert_document.content` for portable exchange.
+- `openqual/dart/attachment.dart:22-27` and `openqual/js/attachment.js:22-29` both require `path` in the binding constructors.
+
+Recommended fix:
+- Consider making the attachment-access contract:
+  at least one of `path` or `content` must be present.
+- If you want to preserve backward compatibility for host-backed records, a good v0.1 compromise would be:
+  `path` optional when `content` is present; required otherwise.
+- That would better match the “minimum needed to understand and exchange the data independently” test in `schemas/README.md`.
+
+### 3. The new provenance model does not extend cleanly to Attachment, leaving no way to express attachment-specific source attribution
+Affected extracted file(s):
+- `openqual/schemas/attachment.md`
+- `openqual/dart/attachment.dart`
+- `openqual/js/attachment.js`
+- `openqual/schemas/source.md`
+- `openqual/schemas/certification.md`
+
+Relevant source file(s):
+- No direct source analogue; this is a standard design consistency issue introduced by the new provenance model.
+
+Issue:
+- Confirmed consistency gap. Stage 7 correctly added `source` to the main new certification types and to the updated reference configs, but `Attachment` has no `source`.
+- That means a certification can say its embedded `CertType` or `PersonSnapshot` came from a different source than the parent record, but it cannot say the same for `cert_document` or supporting attachments.
+
+Evidence:
+- `openqual/schemas/source.md:20-28` says nested types should carry their own `source` when they come from a different source than the parent.
+- `openqual/schemas/certification.md:28` explicitly applies provenance inheritance to nested types in `Certification`.
+- `openqual/schemas/attachment.md:11-17` defines the attachment shape but includes no `source`.
+- `openqual/dart/attachment.dart:20-35` and `openqual/js/attachment.js:17-39` likewise have no provenance field.
+
+Recommended fix:
+- Add `source: Source?` to `Attachment` unless there is a deliberate reason attachments should never carry independent provenance.
+- If you intentionally want attachment provenance to always inherit from the parent, document that explicitly in `attachment.md` so it does not look like an accidental omission.
+
+## Nice to Have
+
+### 4. `canonical_name` is misleading for a field explicitly defined as a frozen snapshot display label
+Affected extracted file(s):
+- `openqual/schemas/task_type_config.md`
+- `openqual/dart/task_type_config.dart`
+- `openqual/js/task_type_config.js`
+
+Relevant source file(s):
+- `_sources/taskbook/lib/backend/schema/structs/task_type_config_struct.dart`
+
+Issue:
+- Probable naming issue. The reference-config docs say `canonical_name` is a frozen snapshot display name, but “canonical” elsewhere in the standard is tied to provenance identity via `canonical_id` and `canonical_source`.
+- That makes `canonical_name` read more authoritative than the schema intends.
+
+Evidence:
+- `openqual/schemas/task_type_config.md:49,59,67` defines `canonical_name` as a snapshot display name for taskbook, skillsheet, and cert references.
+- `openqual/schemas/task_type_config.md:79-82` says the field follows the snapshot principle, not a catalog-governed canonical identity rule.
+- `openqual/schemas/source.md:15-16` reserves the `canonical_*` vocabulary for provenance identifiers.
+
+Recommended fix:
+- Consider renaming `canonical_name` to something like `display_name`, `snapshot_name`, or `reference_name`.
+- If you keep `canonical_name`, add one sentence clarifying that it is not a catalog-canonical identity field, just a frozen human-readable label.
+
+### 5. Source attribution guidance is mostly strong, but one note contradicts the optional field contract
+Affected extracted file(s):
+- `openqual/schemas/source.md`
+- `openqual/schemas/README.md`
+
+Relevant source file(s):
+- No direct source analogue; this is a documentation consistency issue.
+
+Issue:
+- Minor docs inconsistency. The `Source` fields are optional and the docs correctly say records should populate them when the origin is known, but one note then says “The standard requires the attribution to be present,” which reads more strongly than the field contract allows.
+
+Evidence:
+- `openqual/schemas/source.md:15-16` makes both provenance fields optional.
+- `openqual/schemas/source.md:44-47` says standards-compliant records should populate source attribution when the origin is known.
+- `openqual/schemas/source.md:48-50` then says the standard requires the attribution to be present.
+- `openqual/schemas/README.md:36-41` frames catalog enrichment as optional rather than required for conformance.
+
+Recommended fix:
+- Tighten the wording in `source.md` so it consistently says:
+  provenance is optional in structure, strongly recommended when known, and not mandatory for catalog interaction.
+
+## Pass 3 Summary
+
+### Verified strengths
+- The certification slice is internally coherent across `schemas/`, `dart/`, and `js/`.
+- `Certification`, `CertType`, `CertifyingAgency`, `PersonSnapshot`, and the updated task reference configs all carry `source`, which applies the provenance model in the right places.
+- `Discipline` and `CertClassification` are consistently defined and used.
+- `Certification.isCurrentlyValid()` is stylistically in family with the other pure instance methods in the standard, but its current semantics are too narrow.
+
+### New issues found
+- Important:
+  `Certification.isCurrentlyValid()` ignores future `certification_date`.
+- Important:
+  `Attachment` over-specifies `path` even when inline content is sufficient.
+- Important:
+  `Attachment` cannot carry independent provenance despite the new nested-source model.
+- Nice to have:
+  `canonical_name` is probably misnamed relative to the rest of the standard’s provenance vocabulary.
+- Nice to have:
+  `source.md` has one remaining optional-vs-required wording contradiction.
+
+### Recommendation
+- The Stage 7 additions are a strong step forward and make the standard feel meaningfully more publishable.
+- If you want the cleanest `0.1`, I would prioritize fixing:
+  `Certification.isCurrentlyValid()`,
+  the attachment portability contract,
+  and the attachment provenance gap.

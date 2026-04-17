@@ -17,19 +17,20 @@
 /**
  * A file attached to any node in the OpenQual standard.
  *
- * Supports two modes: host-stored (via path) and portable/inline
- * (via content + contentEncoding). When both are present, content
- * is the portable payload and path is the host-local handle.
+ * At least one of path or content must be present. Host-stored
+ * attachments use path; portable/inline attachments use content +
+ * contentEncoding; both may be present.
  */
 class Attachment {
   constructor({
     name,
-    path,
+    path = null,
     mimeType,
     sizeBytes,
     uploadedAt,
     content = null,
     contentEncoding = null,
+    source = null,
   }) {
     this.name = name;
     this.path = path;
@@ -38,6 +39,7 @@ class Attachment {
     this.uploadedAt = uploadedAt;
     this.content = content;
     this.contentEncoding = contentEncoding;
+    this.source = source;
     Object.freeze(this);
   }
 }

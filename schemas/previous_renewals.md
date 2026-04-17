@@ -58,13 +58,10 @@ requirements as it goes.
 **Returns:** an object with `ce_units_earned: double` and
 `certification_progress: double`.
 
-## Canonical source and divergence
+## Implementation note
 
-The TaskBook version of this function is canonical. The CertLocker
-version, visually, is identical in algorithm; the one observed
-difference is that TaskBook's version uses
-`clamp(0.0, 1.0)` on the final progress while CertLocker relies on the
-caller. The published implementation clamps.
+The published implementation clamps the final `certification_progress`
+to `[0.0, 1.0]`. Callers may rely on this invariant.
 
 ## Notes
 

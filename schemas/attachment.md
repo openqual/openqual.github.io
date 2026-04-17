@@ -9,12 +9,18 @@ attachments.
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `name` | `String` | Yes | Original filename. |
-| `path` | `String` | Yes | Opaque, stable handle that identifies the attachment's backing storage entry. See "Path semantics" below. |
+| `path` | `String?` | No | Opaque, stable handle that identifies the attachment's backing storage entry. Required when `content` is absent. See "Path semantics" below. |
 | `mime_type` | `String` | Yes | IANA media type (e.g. `application/pdf`, `image/png`). |
 | `size_bytes` | `int` | Yes | File size in bytes. `0` is valid (empty file). |
 | `uploaded_at` | `DateTime` | Yes | Time the file was uploaded to backing storage. If the attachment has no backing-storage upload phase (e.g. an inline or externally-hosted file recorded directly against the node), use the time of attachment association — the moment the attachment was attached to its node. |
 | `content` | `String?` | No | Base64-encoded file content. When present, the attachment is self-contained and portable — a receiving system can reconstruct the file without resolving `path`. When absent, `path` is the only way to access the file. |
 | `content_encoding` | `String?` | No | Encoding of `content`. Required when `content` is set. The only value defined in v0.1 is `base64`; future versions may add others. |
+| `source` | `Source?` | No | Source attribution for this attachment, when it originated from a different source than the parent record. |
+
+**Invariant:** at least one of `path` or `content` must be present.
+A host-stored attachment has `path`; a portable/inline attachment has
+`content` + `content_encoding`; an attachment with both is valid and
+supports both access modes.
 
 ## Path semantics
 

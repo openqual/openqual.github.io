@@ -54,6 +54,7 @@ class Certification {
    * @returns {boolean}
    */
   isCurrentlyValid(now) {
+    if (this.certificationDate != null && now < this.certificationDate) return false;
     if (this.expirationDate == null) return true;
     if (this.expirationDate.getTime() === neverExpireDate.getTime()) return true;
     return now < this.expirationDate;

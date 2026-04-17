@@ -35,12 +35,14 @@ Pure. Returns `true` iff the certification is considered valid at the
 given instant.
 
 Logic:
-1. If `expiration_date` is null → `true` (no expiration known; assume
+1. If `certification_date` is non-null and `now < certification_date`
+   → `false` (cert has not yet taken effect).
+2. If `expiration_date` is null → `true` (no expiration known; assume
    valid).
-2. If `expiration_date` equals `neverExpireDate` → `true` (lifetime
+3. If `expiration_date` equals `neverExpireDate` → `true` (lifetime
    cert).
-3. If `now < expiration_date` → `true`.
-4. Otherwise → `false`.
+4. If `now < expiration_date` → `true`.
+5. Otherwise → `false`.
 
 This method evaluates validity dates only. Suspension, revocation, and
 other administrative states are not modeled in v0.1; see

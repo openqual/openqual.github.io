@@ -66,8 +66,8 @@ class TaskTypeEvaluationConfig {
 }
 
 class TaskTypeTaskbookConfig {
-  constructor({ canonicalName = null, source = null, requireComplete = true } = {}) {
-    this.canonicalName = canonicalName;
+  constructor({ displayName = null, source = null, requireComplete = true } = {}) {
+    this.displayName = displayName;
     this.source = source;
     this.requireComplete = requireComplete;
     Object.freeze(this);
@@ -75,8 +75,8 @@ class TaskTypeTaskbookConfig {
 }
 
 class TaskTypeSkillsheetConfig {
-  constructor({ canonicalName = null, source = null, requireComplete = true } = {}) {
-    this.canonicalName = canonicalName;
+  constructor({ displayName = null, source = null, requireComplete = true } = {}) {
+    this.displayName = displayName;
     this.source = source;
     this.requireComplete = requireComplete;
     Object.freeze(this);
@@ -84,8 +84,8 @@ class TaskTypeSkillsheetConfig {
 }
 
 class TaskTypeCertConfig {
-  constructor({ canonicalName = null, source = null, requireActive = true } = {}) {
-    this.canonicalName = canonicalName;
+  constructor({ displayName = null, source = null, requireActive = true } = {}) {
+    this.displayName = displayName;
     this.source = source;
     this.requireActive = requireActive;
     Object.freeze(this);

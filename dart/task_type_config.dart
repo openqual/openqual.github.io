@@ -88,36 +88,36 @@ class TaskTypeEvaluationResult {
 }
 
 class TaskTypeTaskbookConfig {
-  final String? canonicalName;
+  final String? displayName;
   final Source? source;
   final bool requireComplete;
 
   const TaskTypeTaskbookConfig({
-    this.canonicalName,
+    this.displayName,
     this.source,
     this.requireComplete = true,
   });
 }
 
 class TaskTypeSkillsheetConfig {
-  final String? canonicalName;
+  final String? displayName;
   final Source? source;
   final bool requireComplete;
 
   const TaskTypeSkillsheetConfig({
-    this.canonicalName,
+    this.displayName,
     this.source,
     this.requireComplete = true,
   });
 }
 
 class TaskTypeCertConfig {
-  final String? canonicalName;
+  final String? displayName;
   final Source? source;
   final bool requireActive;
 
   const TaskTypeCertConfig({
-    this.canonicalName,
+    this.displayName,
     this.source,
     this.requireActive = true,
   });

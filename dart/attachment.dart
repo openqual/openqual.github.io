@@ -12,27 +12,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import 'source.dart';
+
 /// A file attached to any node in the OpenQual standard.
 ///
-/// Supports two modes: host-stored (via [path]) and portable/inline
-/// (via [content] + [contentEncoding]). When both are present, [content]
-/// is the portable payload and [path] is the host-local handle.
+/// At least one of [path] or [content] must be present. Host-stored
+/// attachments use [path]; portable/inline attachments use [content]
+/// + [contentEncoding]; both may be present.
 class Attachment {
   final String name;
-  final String path;
+  final String? path;
   final String mimeType;
   final int sizeBytes;
   final DateTime uploadedAt;
   final String? content;
   final String? contentEncoding;
+  final Source? source;
 
   const Attachment({
     required this.name,
-    required this.path,
+    this.path,
     required this.mimeType,
     required this.sizeBytes,
     required this.uploadedAt,
     this.content,
     this.contentEncoding,
+    this.source,
   });
 }

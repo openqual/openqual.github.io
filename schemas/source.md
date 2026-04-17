@@ -44,8 +44,9 @@ version commitment is made.
 - Both fields are optional because a record may have no known
   origin (e.g. manually entered data with no catalog binding).
   Standards-compliant portable records **should** populate source
-  attribution when the origin is known.
+  attribution when the origin is known, but omitting it is not a
+  conformance violation.
 - What a receiving application does with source attribution —
   verify it, enrich from it, or ignore it — is entirely optional.
-  The standard requires the attribution to be present; it does not
-  require any particular action on it.
+  The standard encourages attribution to be present when possible;
+  it does not require any particular action on it.

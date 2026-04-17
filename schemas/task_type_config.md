@@ -46,7 +46,7 @@ discriminator.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `canonical_name` | `String?` | No | Snapshot display name of the referenced taskbook template, frozen at reference time. |
+| `display_name` | `String?` | No | Snapshot display name of the referenced taskbook template, frozen at reference time. |
 | `source` | `Source?` | No | Source attribution. `canonical_id` identifies the template in the originating system. |
 | `require_complete` | `bool` | Yes | When `true`, the referenced taskbook must have `status = complete` for this task to count as done. Defaults to `true`. |
 
@@ -56,7 +56,7 @@ Identical shape to `TaskTypeTaskbookConfig`.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `canonical_name` | `String?` | No | Snapshot display name of the referenced skillsheet template. |
+| `display_name` | `String?` | No | Snapshot display name of the referenced skillsheet template. |
 | `source` | `Source?` | No | Source attribution. `canonical_id` identifies the template. |
 | `require_complete` | `bool` | Yes | Defaults to `true`. |
 
@@ -64,7 +64,7 @@ Identical shape to `TaskTypeTaskbookConfig`.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `canonical_name` | `String?` | No | Snapshot display name of the required certification type. |
+| `display_name` | `String?` | No | Snapshot display name of the required certification type. |
 | `source` | `Source?` | No | Source attribution. `canonical_id` identifies the cert type. |
 | `require_active` | `bool` | Yes | When `true`, the user must hold a currently-valid instance of the cert (see `Certification.isCurrentlyValid`). Defaults to `true`. |
 
@@ -76,7 +76,7 @@ Identical shape to `TaskTypeTaskbookConfig`.
   reporting.
 - `evaluated_by` is an opaque string ID. Resolution to the referenced
   entity is the host application's responsibility.
-- The `canonical_name` + `source` pattern on reference configs follows
+- The `display_name` + `source` pattern on reference configs follows
   the same snapshot principle as `SignoffRecord.signatory_name` and
   `PersonSnapshot.display_name`: the name is frozen at reference time
   so the record is meaningful without external lookups.
