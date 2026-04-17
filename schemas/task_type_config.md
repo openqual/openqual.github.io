@@ -64,9 +64,19 @@ Identical shape to `TaskTypeTaskbookConfig`.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `display_name` | `String?` | No | Snapshot display name of the required certification type. |
-| `source` | `Source?` | No | Source attribution. `canonical_id` identifies the cert type. |
-| `require_active` | `bool` | Yes | When `true`, the user MUST hold a currently-valid instance of the cert (see `Certification.isCurrentlyValid`). Defaults to `true`. |
+| `accepted_cert_types` | `List<AcceptedCertType>` | Yes | The cert types that satisfy this task. The task is satisfied when the holder has ANY currently-valid instance (respecting `require_active`) of ANY entry in this list. MUST be non-empty. The one-cert case is a single-entry list. |
+| `require_active` | `bool` | Yes | When `true`, the user MUST hold a currently-valid instance (see `Certification.isCurrentlyValid`) of one of the accepted cert types. Defaults to `true`. |
+
+### `AcceptedCertType`
+
+A single entry in a `TaskTypeCertConfig.accepted_cert_types` list.
+Follows the same `display_name` + `source` snapshot pattern as the
+other reference configs.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `display_name` | `String?` | No | Snapshot display name of the accepted certification type. |
+| `source` | `Source?` | No | Source attribution. `canonical_id` identifies the cert type in the originating system or catalog. |
 
 ## Notes
 
@@ -80,4 +90,12 @@ Identical shape to `TaskTypeTaskbookConfig`.
   the same snapshot principle used throughout the standard (see
   `PersonSnapshot.display_name`, `OrganizationSnapshot.display_name`):
   the name is frozen at reference time so the record is meaningful
-  without external lookups.
+  without external lookups. `AcceptedCertType` applies this pattern
+  inside the `TaskTypeCertConfig.accepted_cert_types` list.
+- `accepted_cert_types` is a list so a single requirement can accept
+  several equivalent cert types (e.g. a CPR requirement accepting AHA
+  BLS, ARC BLS, or Military Training Network equivalents). The
+  standard does not model "equivalence" as its own concept — it
+  simply lets a requirement enumerate what it accepts. Catalog-level
+  equivalence governance, if needed, remains a host/catalog concern
+  upstream of the task configuration.

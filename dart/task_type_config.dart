@@ -112,13 +112,21 @@ class TaskTypeSkillsheetConfig {
 }
 
 class TaskTypeCertConfig {
-  final String? displayName;
-  final Source? source;
+  final List<AcceptedCertType> acceptedCertTypes;
   final bool requireActive;
 
   const TaskTypeCertConfig({
-    this.displayName,
-    this.source,
+    required this.acceptedCertTypes,
     this.requireActive = true,
   });
+}
+
+/// A single entry in [TaskTypeCertConfig.acceptedCertTypes]. Follows the
+/// `display_name` + `source` snapshot pattern used by the other
+/// reference configs.
+class AcceptedCertType {
+  final String? displayName;
+  final Source? source;
+
+  const AcceptedCertType({this.displayName, this.source});
 }

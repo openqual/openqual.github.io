@@ -663,6 +663,14 @@ v0.1" above for the full deferred / out-of-scope split.
   ("this cert type is earned by template X") is deferred to a future
   version — those claims are catalog/governance territory and may
   involve multiple earning paths per cert type.
+- **Cross-credential relationships.** `Certification` captures
+  earning provenance (`earned_via_taskbook`) but has no structural
+  slot for relationships between credentials — a state EMT license
+  granted on the basis of NREMT reciprocity, a paramedic cert that
+  lists the EMT it was upgraded from, a CPR card referenced as a
+  prerequisite for a larger credential. Use cases are varied enough
+  that a single shape is not obvious; modeling is deferred to a
+  future version and will benefit from concrete implementer input.
 - **Additional `RequirementUnits`** (CE credits, sessions, contact
   hours). The current `hours`-only set will expand once the target
   disciplines' measurement conventions are agreed.

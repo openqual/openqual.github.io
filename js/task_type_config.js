@@ -84,10 +84,22 @@ class TaskTypeSkillsheetConfig {
 }
 
 class TaskTypeCertConfig {
-  constructor({ displayName = null, source = null, requireActive = true } = {}) {
+  constructor({ acceptedCertTypes, requireActive = true }) {
+    this.acceptedCertTypes = Object.freeze([...acceptedCertTypes]);
+    this.requireActive = requireActive;
+    Object.freeze(this);
+  }
+}
+
+/**
+ * A single entry in TaskTypeCertConfig.acceptedCertTypes. Follows the
+ * display_name + source snapshot pattern used by the other reference
+ * configs.
+ */
+class AcceptedCertType {
+  constructor({ displayName = null, source = null } = {}) {
     this.displayName = displayName;
     this.source = source;
-    this.requireActive = requireActive;
     Object.freeze(this);
   }
 }
@@ -115,4 +127,5 @@ module.exports = {
   TaskTypeTaskbookConfig,
   TaskTypeSkillsheetConfig,
   TaskTypeCertConfig,
+  AcceptedCertType,
 };

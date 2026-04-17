@@ -417,16 +417,27 @@ source.
           "type": "cert",
           "type_config": {
             "cert_config": {
-              "display_name": "AHA Basic Life Support",
-              "source": {
-                "canonical_id": "ct-aha-bls",
-                "canonical_source": "colorado_ems_catalog:cert_types"
-              },
+              "accepted_cert_types": [
+                {
+                  "display_name": "AHA Basic Life Support",
+                  "source": {
+                    "canonical_id": "ct-aha-bls",
+                    "canonical_source": "colorado_ems_catalog:cert_types"
+                  }
+                },
+                {
+                  "display_name": "ARC Basic Life Support for Healthcare Providers",
+                  "source": {
+                    "canonical_id": "ct-arc-bls-hc",
+                    "canonical_source": "colorado_ems_catalog:cert_types"
+                  }
+                }
+              ],
               "require_active": true
             }
           },
           "title": "Current BLS Certification on File",
-          "description": "Holder MUST have a currently-valid BLS certification recorded in the department's credentialing system.",
+          "description": "Holder MUST have a currently-valid BLS certification recorded in the department's credentialing system. AHA BLS or ARC BLS-HC are both accepted.",
           "status": "not_started",
           "progress": 0.0,
           "completion": { "complete": false, "completed_at": null },
@@ -630,8 +641,11 @@ Four tasks are evaluation-typed:
 
 `t-bls-cert-check` is a fifth evaluation-*shaped* task but with
 `type = cert` — it's a credential check rather than a hands-on
-demonstration. Jordan hasn't presented his BLS card yet, so the task
-is `not_started`.
+demonstration. Its `cert_config.accepted_cert_types` lists **two**
+equivalent BLS cert types — Aurora Fire accepts either AHA BLS or
+ARC BLS-HC for this requirement. The task is satisfied when the
+holder has a currently-valid instance of either one. Jordan hasn't
+presented a BLS card yet, so the task is `not_started`.
 
 ### Subtasks and progress rollup
 
@@ -704,12 +718,14 @@ pedagogically interesting mirror-image of the certification example
 — there, holder and instructor inherited because they shared a
 source with the parent cert; here, they don't.
 
-The BLS cert-type reference on `t-bls-cert-check` shows the
-snapshot+Source pattern applied to reference configs (see
-`task_type_config.md` → `TaskTypeCertConfig`). A receiver who wants
-to verify Jordan actually holds a current BLS can combine
-`display_name` (frozen label) with `source` (lookup pointer into
-the Colorado EMS catalog).
+The BLS references on `t-bls-cert-check` show the snapshot+Source
+pattern applied to reference configs (see `task_type_config.md` →
+`AcceptedCertType`). Each entry in `accepted_cert_types` combines
+`display_name` (frozen label) with `source` (lookup pointer into the
+Colorado EMS catalog). The list shape lets a single requirement
+accept any of several equivalent cert types without introducing an
+"equivalence" concept into the standard — the requirement just
+enumerates what it accepts.
 
 ## What this example demonstrates
 
@@ -734,8 +750,10 @@ Quick reference — this example exercises:
   (result null)
 - Plain task with subtasks at mid-progress (`t-opa-insert`, 2 of 4
   subtasks complete) demonstrating the progress rollup
-- `TaskTypeCertConfig` reference to a cert type in a different
-  catalog
+- `TaskTypeCertConfig.accepted_cert_types` with **two** equivalent
+  BLS cert types (AHA BLS and ARC BLS-HC) — demonstrating the list
+  shape that handles requirement-level equivalence without
+  introducing an "equivalence" concept into the standard
 - Section-level `scoring_config` with `min_passing_percentage = 0.7`
   and its corresponding `scoring_summary`
 - Book-level `evaluation_config.scoring_mode = per_section`, showing
