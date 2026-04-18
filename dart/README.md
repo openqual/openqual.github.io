@@ -36,37 +36,44 @@ Two supported usage patterns:
 
 ## Layout
 
+Standard Dart package layout. Source files live under `lib/`; Dart
+resolves `package:openqual/foo.dart` to `lib/foo.dart`.
+
 ```
 dart/
-  enums.dart                        # all enums
-  completion_state.dart
-  start_and_end_times.dart
-  signoff_policy.dart               # + SignoffPolicy.isEligible, signoffsOK helper
-  signoff_record.dart
-  task_type_config.dart             # + eval criteria/result/subconfigs
-  source.dart
-  person_snapshot.dart
-  attachment.dart                   # + inline content for portability
-  validity_period.dart
-  organization_snapshot.dart
-  cert_type.dart
-  certification.dart                # + isCurrentlyValid
-  taskbook_assignment.dart          # + assignee, evaluator, host org
-  taskbook_subtask.dart
-  taskbook_task.dart                # + computeStatus, withClampedPoints
-  taskbook_section.dart             # + computeStatus, scoring config/summary
-  taskbook_evaluation_config.dart   # + BookScoringConfig
-  taskbook_summary.dart             # + BookScoringSummary
-  taskbook.dart                     # + fromExternalJson, markComplete
-  renewal_requirement.dart
-  renewal_component.dart
-  renewal_requirements.dart
-  renewal_requirement_progress.dart
-  renewal_component_progress.dart
-  renewal_progress.dart             # + computeStatus
-  previous_renewal.dart
-  previous_renewals.dart
-  certification_progress.dart       # calculateCertificationProgress
+  pubspec.yaml
+  README.md                           # this file
+  lib/
+    enums.dart                        # all enums
+    completion_state.dart
+    start_and_end_times.dart
+    signoff_policy.dart               # + SignoffPolicy.isEligible, signoffsOK helper
+    signoff_record.dart
+    task_type_config.dart             # + eval criteria/result/subconfigs
+    source.dart
+    person_snapshot.dart              # + OrgMembership
+    attachment.dart                   # + inline content for portability
+    validity_period.dart
+    organization_snapshot.dart
+    cert_type.dart
+    certification.dart                # + isCurrentlyValid, EarnedViaTaskbook
+    taskbook_assignment.dart          # + AssignedPerson, AssignedOrganization
+    taskbook_subtask.dart
+    taskbook_task.dart                # + computeStatus, withClampedPoints
+    taskbook_section.dart             # + computeStatus, scoring config/summary
+    taskbook_evaluation_config.dart   # + BookScoringConfig
+    taskbook_summary.dart             # + BookScoringSummary
+    taskbook.dart                     # + fromExternalJson, markComplete
+    renewal_requirement.dart
+    renewal_component.dart
+    renewal_requirements.dart
+    renewal_requirement_progress.dart
+    renewal_component_progress.dart
+    renewal_progress.dart             # + computeStatus
+    previous_renewal.dart
+    previous_renewals.dart
+    certification_progress.dart       # calculateCertificationProgress
+    constants.dart                    # neverExpireDate, openqualSchemaVersion
 ```
 
 ## Usage sketch
