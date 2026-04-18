@@ -9,11 +9,30 @@ and the code is the bug.
 
 ## Scope
 
-This is a reference implementation, not a published package. Copy the
-files you need into your own Dart or Flutter project. Every class is a
-plain value object. The only standard-library imports are
-`dart:convert` and `dart:math`, both used by
-`Taskbook.fromExternalJson`.
+A reference implementation of the OpenQual v0.1 spec. The Dart code
+conforms to the schemas in `../schemas/` — if the code disagrees
+with the schema, the schema wins and the code is the bug.
+
+Two supported usage patterns:
+
+- **Path dependency.** The code is package-shaped (name `openqual`,
+  version tracks the spec). Add it as a `path:` dependency in your
+  `pubspec.yaml`:
+
+  ```yaml
+  dependencies:
+    openqual:
+      path: ../path/to/openqual/dart
+  ```
+
+  Not published to pub.dev yet (`publish_to: 'none'`) — the package
+  is real but the public-release story is deferred until the spec
+  is past v0.1.
+- **Copy the files.** Every class is a plain value object and the
+  only standard-library imports are `dart:convert` and `dart:math`,
+  both used only by `Taskbook.fromExternalJson`. Vendoring the
+  files into your project remains a valid option for callers who
+  prefer it over a path dependency.
 
 ## Layout
 
@@ -53,9 +72,9 @@ dart/
 ## Usage sketch
 
 ```dart
-import 'package:<your_pkg>/taskbook.dart';
-import 'package:<your_pkg>/taskbook_section.dart';
-import 'package:<your_pkg>/enums.dart';
+import 'package:openqual/taskbook.dart';
+import 'package:openqual/taskbook_section.dart';
+import 'package:openqual/enums.dart';
 
 final book = Taskbook.fromExternalJson(jsonFromAi);
 
@@ -64,6 +83,9 @@ final recomputed = book.copyWith(
   sections: book.sections.map((s) => s.computeStatus()).toList(),
 );
 ```
+
+(Callers using the copy-the-files option replace `package:openqual/`
+with their own package name.)
 
 ## Purity contract
 

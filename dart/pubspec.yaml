@@ -1,0 +1,7 @@
+name: openqual
+description: Dart reference implementation of the OpenQual open qualification data standard. See ../schemas/ for the normative spec.
+version: 0.1.0
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
