@@ -84,8 +84,8 @@ book's computed `status = owner_action_needed`.
 
 - `signoffs_required_total` = count of all `SignoffPolicy` instances
   across the book (`Taskbook.signoff_policy`), every section
-  (`TaskbookSection.signoff_policy_override`), and every task
-  (`TaskbookTask.signoff_policy_override`).
+  (`TaskbookSection.signoff_policy`), and every task
+  (`TaskbookTask.signoff_policy`).
 - `signoffs_completed_total` = count of those policies with
   `completed = true`.
 
@@ -100,9 +100,8 @@ pass/fail state. Threshold fields are populated only when
 
 **Recompute trigger.** Implementations that cache `TaskbookSummary`
 MUST recompute on any write that changes a task's or section's
-`status`, a section's or task's `signoff_policy_override`, the book's
-`signoff_policy`, any policy's `completed` flag, or the book's
-`completion`. `last_modified` is set to the recomputation time.
+`status`, any tier's `signoff_policy`, any policy's `completed` flag,
+or the book's `completion`. `last_modified` is set to the recomputation time.
 
 ## Notes
 

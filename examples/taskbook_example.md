@@ -48,7 +48,7 @@ source.
 
 ```json
 {
-  "schema_version": "0.1.0",
+  "schema_version": "1.0.0",
 
   "taskbook_type": "taskbook",
   "title": "Aurora Fire EMT Skills Verification — Spring 2026 Cohort",
@@ -148,7 +148,7 @@ source.
           "progress": 1.0,
           "completion": { "complete": true, "completed_at": "2026-04-08T14:20:00Z" },
           "subtasks": [],
-          "signoff_policy_override": [
+          "signoff_policy": [
             {
               "id": "so-pa-demo",
               "type": "specify_users",
@@ -204,15 +204,14 @@ source.
           "progress": 1.0,
           "completion": { "complete": true, "completed_at": "2026-04-09T11:05:00Z" },
           "subtasks": [],
-          "signoff_policy_override": [],
+          "signoff_policy": [],
           "signoffs_require_all": true,
           "attachments": [],
           "notes": null
         }
       ],
-      "signoff_policy_override": [],
+      "signoff_policy": [],
       "signoffs_require_all": true,
-      "signoff_policy_cascades": false,
       "scoring_config": {
         "min_passing_percentage": 0.7
       },
@@ -260,7 +259,7 @@ source.
           "progress": 1.0,
           "completion": { "complete": true, "completed_at": "2026-04-15T10:12:00Z" },
           "subtasks": [],
-          "signoff_policy_override": [
+          "signoff_policy": [
             {
               "id": "so-bvm-demo",
               "type": "specify_users",
@@ -328,7 +327,7 @@ source.
               "attachments": []
             }
           ],
-          "signoff_policy_override": [],
+          "signoff_policy": [],
           "signoffs_require_all": true,
           "attachments": [],
           "notes": null
@@ -352,7 +351,7 @@ source.
           "progress": 0.0,
           "completion": { "complete": false, "completed_at": null },
           "subtasks": [],
-          "signoff_policy_override": [
+          "signoff_policy": [
             {
               "id": "so-intub-demo",
               "type": "specify_users",
@@ -369,9 +368,8 @@ source.
           "notes": null
         }
       ],
-      "signoff_policy_override": [],
+      "signoff_policy": [],
       "signoffs_require_all": true,
-      "signoff_policy_cascades": false,
       "scoring_config": null,
       "scoring_summary": null,
       "attachments": [],
@@ -406,7 +404,7 @@ source.
           "progress": 0.0,
           "completion": { "complete": false, "completed_at": null },
           "subtasks": [],
-          "signoff_policy_override": [],
+          "signoff_policy": [],
           "signoffs_require_all": true,
           "attachments": [],
           "notes": null
@@ -442,15 +440,14 @@ source.
           "progress": 0.0,
           "completion": { "complete": false, "completed_at": null },
           "subtasks": [],
-          "signoff_policy_override": [],
+          "signoff_policy": [],
           "signoffs_require_all": true,
           "attachments": [],
           "notes": null
         }
       ],
-      "signoff_policy_override": [],
+      "signoff_policy": [],
       "signoffs_require_all": true,
-      "signoff_policy_cascades": false,
       "scoring_config": null,
       "scoring_summary": null,
       "attachments": [],
@@ -480,7 +477,6 @@ source.
     }
   ],
   "signoffs_require_all": true,
-  "signoff_policy_cascades": false,
 
   "attachments": [
     {
@@ -552,7 +548,7 @@ source.
 ### Schema version
 
 Same pattern as `Certification`. Taskbook is a top-level portable
-record, so `schema_version` is required. `"0.1.0"`.
+record, so `schema_version` is required. `"1.0.0"`.
 
 ### Assignment — three slots, one pattern
 
@@ -594,9 +590,10 @@ Three distinct signoff patterns appear in this book:
 3. **No policy at all** on plain tasks and on the scored quiz — those
    are gated by completion and outcome alone.
 
-`signoff_policy_cascades = false` at every level means the book's
-officer policy stays book-level; it doesn't propagate to sections
-or tasks without explicit override.
+Each tier's `signoff_policy` list is authoritative for that tier —
+there is no cross-tier inheritance at runtime (v1.0 removed the
+v0.1-era cascade flag; see `taskbook.md` → "Per-tier policy
+resolution"). The book's officer policy stays book-level.
 
 ### Completed signoffs and `SignoffRecord`
 

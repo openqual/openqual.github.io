@@ -15,6 +15,19 @@ further sub-divide that target.
 | `component_quantity` | `double` | Yes | Total quantity required to satisfy this component. |
 | `component_units` | `String` | Yes | Unit label (e.g. `"hours"`). Free-form; typically matches a `RequirementUnits` value but the standard does not enforce this at the component level. |
 | `requirements` | `List<RenewalRequirement>` | Yes | Sub-requirements. May be empty for components that are satisfied directly (no further subdivision). |
+| `topics` | `List<String>` | Yes | Subject-matter topics that training must cover to credit this component, as authority-namespaced strings. May be empty (any topic in the discipline counts — flex components like NREMT "Individual"). See "Topic strings" below. |
+
+## Topic strings
+
+Topics are free-form strings in the **authority-namespaced format**
+`"<AUTHORITY>: <Topic>"` — e.g. `"NREMT: Airway"`, `"NREMT: Pediatric"`.
+The format is normative (exact string intersection, after Unicode
+case-folding, is the matching operation — `"NREMT: Airway"` and
+`"nremt: airway"` match; `"NREMT:Airway"` does not); the **vocabulary**
+is not — which topic labels an authority publishes is catalog/governance
+territory, and implementations MAY use any labels their crediting
+authority recognizes. The same convention applies to
+`RenewalRequirement.topics` and `TrainingRecord.topics`.
 
 ## Notes
 

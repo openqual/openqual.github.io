@@ -1,6 +1,6 @@
 # Implementer Checklist
 
-A terse, copy-pasteable checklist for building OpenQual v0.1
+A terse, copy-pasteable checklist for building OpenQual v1.0
 conformance into your implementation. Adoption aid only — the
 normative authority is the Conformance section in
 `schemas/README.md`; when this checklist and the Conformance section
@@ -14,11 +14,13 @@ checklist. Most apps will be both Producer and Receiver.
 ### MUST
 
 - [ ] Populate `schema_version` on every top-level portable record
-      (`Certification`, `Taskbook`). Current value: `"0.1.0"`.
+      (`Certification`, `Taskbook`, `TrainingRecord`). Current value: `"1.0.0"`.
 - [ ] Populate every field marked "Required" in the spec for the
       record types I emit.
 - [ ] Restrict enum-typed fields to values published in the
-      standard's enums. No arbitrary strings in enum slots.
+      standard's enums. No arbitrary strings in enum slots, and
+      enum wire values are the published snake_case forms
+      (`technical_rescue`, `pass_fail`) — never camelCase.
 - [ ] Serialize calendar-date fields (`Certification.certification_date`,
       `Certification.expiration_date`) as `YYYY-MM-DD` or
       `DateTime` fixed to `00:00:00 UTC` on the named day.

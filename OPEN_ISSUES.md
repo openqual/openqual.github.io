@@ -1,4 +1,20 @@
-# Open Issues and Observations (v0.1)
+# Open Issues and Observations
+
+> **v1.0 disposition pass (2026-07-03).** Items resolved by the v1.0
+> release: #4 (the `min_passing_percentage > 1.0` auto-correction is
+> REMOVED — out-of-range values are now invalid), #6 (documented:
+> task-level `min_passing_points` is advisory; `result.outcome` is
+> authoritative), #7 (summary tense normalized in v0.1, unchanged),
+> #8 (kept as separate classes deliberately — parallelism with
+> `TaskTypes`; wire unaffected), #10 (identity scoping answered by
+> practice: `PersonSnapshot` + `TrainingRecord.location` cover what
+> portability needs; Address/Name/Identity structs stay app concerns),
+> #11 (E.164 SHOULD note added to contact phone fields), #12
+> (documented as a host-application concern in
+> `renewal_requirements.md`). Items #2/#3/#9/#13 are source-app
+> cleanups, not standard changes. The community-input items remain
+> open — v1.0's `renewal_window` + topic strings materially expand
+> what renewal shapes can express.
 
 Items noticed during extraction that are worth discussing in future
 releases. Most are notes rather than blockers; resolved release

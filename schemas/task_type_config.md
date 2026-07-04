@@ -1,15 +1,16 @@
 # TaskTypeConfig
 
 Polymorphic configuration for a `TaskbookTask`. Exactly one of
-`evaluation_config`, `taskbook_config`, `skillsheet_config`, or
-`cert_config` SHOULD be populated, matching the task's `type`
-discriminator.
+`evaluation_config`, `inspection_config`, `taskbook_config`,
+`skillsheet_config`, or `cert_config` SHOULD be populated, matching the
+task's `type` discriminator.
 
 ## Fields
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `evaluation_config` | `TaskTypeEvaluationConfig?` | No | Populated when `type = evaluation`. |
+| `inspection_config` | `TaskTypeInspectionConfig?` | No | Populated when `type = inspection`. |
 | `taskbook_config` | `TaskTypeTaskbookConfig?` | No | Populated when `type = taskbook`. |
 | `skillsheet_config` | `TaskTypeSkillsheetConfig?` | No | Populated when `type = skillsheet`. |
 | `cert_config` | `TaskTypeCertConfig?` | No | Populated when `type = cert`. |
@@ -31,6 +32,23 @@ discriminator.
 | `autofail` | `bool` | Yes | When `true`, a failed result on this task propagates `complete_failed` up to the parent section (and book). Defaults to `false`. |
 | `points_possible` | `double?` | No | Required when `evaluation_type = scored`. Zero is valid. |
 | `min_passing_points` | `double?` | No | Optional task-level passing threshold. Used for UI feedback; the authoritative pass/fail signal is still `result.outcome`. |
+| `time_threshold` | `TimeThreshold?` | No | Optional target completion time for timed evaluations. See below. |
+
+### `TimeThreshold`
+
+Target completion time for a timed evaluation ("must finish within 90
+seconds"). The observed duration comes from the work item's
+`start_and_end.duration_ms`; this is the template-side target it is
+evaluated against.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `duration_ms` | `int` | Yes | Target time in milliseconds. Must be positive. |
+| `is_hard` | `bool` | Yes | `false` (soft): display-only, outcome unaffected. `true` (hard): the outcome fails when the observed duration exceeds `duration_ms`. Defaults to `false`. |
+
+Hard-threshold semantics apply after the rest of the outcome
+determination — worst outcome wins: a `pass` outcome with an observed
+duration over a hard threshold is evaluated as `fail`.
 
 ### `TaskTypeEvaluationResult`
 
@@ -42,6 +60,73 @@ discriminator.
 | `evaluated_at` | `DateTime?` | No | Timestamp of the evaluation. |
 | `notes` | `String?` | No | Evaluator notes. |
 
+### `TaskTypeInspectionConfig`
+
+Configuration + result for `type = inspection` — a structured
+observation recorded by a person: a yes/no condition check, a
+measurement against pass bands, or a count against an expected
+quantity. Distinct from `evaluation` (a judged assessment of a
+person's performance): an inspection records the observed state of
+the thing being verified, and the observation value itself is
+first-class data, not just a derived outcome.
+
+Scope note: the standard models the **verification record** — who
+observed what, with what result. Asset registries, maintenance
+histories, and equipment inventories remain out of scope (see
+`README.md` → "Out of scope").
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `criteria` | `TaskTypeInspectionCriteria?` | No | What is being checked and what passing looks like. |
+| `result` | `TaskTypeInspectionResult?` | No | The recorded observation. Absent until an observer records one. |
+
+### `TaskTypeInspectionCriteria`
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `kind` | `InspectionKind` | Yes | `pass_fail`, `measurement`, or `count`. |
+| `critical` | `bool` | Yes | When `true`, a failing observation derives `critical_failure` triage, which propagates `complete_failed` up to the parent section (and book) — the inspection counterpart of `autofail`. Defaults to `false`. |
+| `unit` | `String?` | No | Display unit for `measurement` / `count` kinds, e.g. `"PSI"`, `"batteries"`. |
+| `pass_min` | `double?` | No | `measurement` only: inclusive lower bound of the passing band. Null = unbounded below. |
+| `pass_max` | `double?` | No | `measurement` only: inclusive upper bound of the passing band. Null = unbounded above. |
+| `degraded_min` | `double?` | No | `measurement` only: inclusive lower bound of the degraded band, consulted when the value misses the passing band. |
+| `degraded_max` | `double?` | No | `measurement` only: inclusive upper bound of the degraded band. |
+| `expected_quantity` | `int?` | No | `count` only (required for that kind): the quantity expected. Must be `>= 0`. |
+
+### `TaskTypeInspectionResult`
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `triage` | `InspectionTriage` | Yes | Derived severity: `pass`, `degraded`, `failing`, or `critical_failure`. See "Triage derivation" below. |
+| `ok` | `bool?` | No | `pass_fail` kind: the observed yes/no. |
+| `measured_value` | `double?` | No | `measurement` kind: the observed value, recorded **unclamped** — a 4000 PSI reading against a 3000 PSI floor round-trips faithfully. |
+| `found_quantity` | `int?` | No | `count` kind: the observed quantity, unclamped. |
+| `action` | `InspectionAction?` | No | Recommended follow-up: `replace`, `repair`, or `monitor`. |
+| `observed_by` | `String?` | No | Opaque observer user ID. |
+| `observed_at` | `DateTime?` | No | Timestamp of the observation. |
+| `notes` | `String?` | No | Observer notes. |
+
+### Triage derivation (normative)
+
+Pure function of criteria + the observed value:
+
+- `pass_fail`: `ok = true` → `pass`. `ok = false` → `critical_failure`
+  when `criteria.critical`, else `failing`.
+- `measurement`: value within `[pass_min, pass_max]` (null bounds are
+  open) → `pass`. Else, if a degraded band is defined and the value is
+  within it → `degraded`. Else → `critical_failure` when
+  `criteria.critical`, else `failing`.
+- `count`: `found_quantity >= expected_quantity` → `pass`.
+  `0 < found_quantity < expected_quantity` → `degraded`.
+  `found_quantity = 0` → `critical_failure` when `criteria.critical`,
+  else `failing`.
+
+Status contribution (see `taskbook_task.md`): a recorded observation
+with triage `pass` or `degraded` behaves as a passing completion;
+`failing` or `critical_failure` behaves as a failed completion
+(`complete_failed`). Only `critical_failure` propagates to the parent
+tiers the way evaluation `autofail` does.
+
 ### `TaskTypeTaskbookConfig`
 
 | Field | Type | Required | Description |
@@ -52,7 +137,9 @@ discriminator.
 
 ### `TaskTypeSkillsheetConfig`
 
-Identical shape to `TaskTypeTaskbookConfig`.
+Identical shape to `TaskTypeTaskbookConfig`. The two are published as
+separate classes deliberately, for parallelism with their matching
+`TaskTypes` values; the wire shapes are unaffected by that choice.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -84,8 +171,8 @@ other reference configs.
 - `evaluation_type = scored` requires `points_possible`; a scored
   evaluation with `outcome = fail` still carries `points_awarded` for
   reporting.
-- `evaluated_by` is an opaque string ID. Resolution to the referenced
-  entity is the host application's responsibility.
+- `evaluated_by` / `observed_by` are opaque string IDs. Resolution to
+  the referenced entity is the host application's responsibility.
 - The `display_name` + `source` pattern on reference configs follows
   the same snapshot principle used throughout the standard (see
   `PersonSnapshot.display_name`, `OrganizationSnapshot.display_name`):
@@ -99,3 +186,11 @@ other reference configs.
   simply lets a requirement enumerate what it accepts. Catalog-level
   equivalence governance, if needed, remains a host/catalog concern
   upstream of the task configuration.
+- **Evaluation vs inspection.** Both produce an outcome, but they
+  answer different questions: an evaluation judges a *person's
+  performance* (with an evaluator, optionally scored); an inspection
+  records the *observed state of a thing* (with an observer, and the
+  observation value — reading, count, presence — as first-class data).
+  The distinction matters for receivers: inspection results carry the
+  measurement unclamped, while scored-evaluation points clamp to
+  `points_possible`.

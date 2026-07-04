@@ -13,3 +13,4 @@ A concrete atomic requirement under a `RenewalComponent`.
 | `requirement_description` | `String?` | No | Prose description. |
 | `requirement_quantity` | `double` | Yes | Target quantity. |
 | `requirement_units` | `RequirementUnits` | Yes | Unit for the target. |
+| `topics` | `List<String>` | Yes | Subject-matter topics for this requirement, authority-namespaced (see `renewal_component.md` → "Topic strings"). May be empty (inherits the component's semantics: any topic counts). |

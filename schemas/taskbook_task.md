@@ -1,8 +1,9 @@
 # TaskbookTask
 
 A leaf work unit within a `TaskbookSection`. Tasks are polymorphic via
-`type` and `type_config`: a task can be a plain task, an evaluation, or
-a reference to a nested taskbook / skillsheet / certification.
+`type` and `type_config`: a task can be a plain task, an evaluation, an
+inspection, or a reference to a nested taskbook / skillsheet /
+certification.
 
 ## Fields
 
@@ -17,9 +18,9 @@ a reference to a nested taskbook / skillsheet / certification.
 | `due_date` | `DateTime?` | No | Task due date. |
 | `status` | `WorkItemStatus` | Yes | Computed by `computeStatus`. |
 | `progress` | `double` | Yes | `0.0`–`1.0`. Computed from subtasks. |
-| `completion` | `CompletionState` | Yes | Owner completion marker. For `type = evaluation`, "complete" is driven by the evaluation result, not by this field; see `computeStatus`. |
+| `completion` | `CompletionState` | Yes | Owner completion marker. For `type = evaluation` and `type = inspection`, "complete" is driven by the recorded result/observation, not by this field; see `computeStatus`. |
 | `subtasks` | `List<TaskbookSubtask>` | Yes | Ordered by `TaskbookSubtask.order`. May be empty. |
-| `signoff_policy_override` | `List<SignoffPolicy>` | Yes | Signoff policies for this task. Overrides the section/book policy when non-empty. |
+| `signoff_policy` | `List<SignoffPolicy>` | Yes | Signoff policies for this task. May be empty. This tier's list is authoritative for this tier; no inheritance from the section or book at runtime (see `taskbook.md` → "Per-tier policy resolution"). |
 | `signoffs_require_all` | `bool` | Yes | When `true`, all policies MUST be completed. Defaults to `true`. |
 | `attachments` | `List<Attachment>` | Yes | May be empty. |
 | `notes` | `String?` | No | Free-form notes. |
@@ -29,29 +30,33 @@ a reference to a nested taskbook / skillsheet / certification.
 ### `TaskbookTask.computeStatus() → WorkItemStatus`
 
 Pure. Computes the task's `status` given its current `subtasks`,
-`signoff_policy_override`, `signoffs_require_all`, `type_config`, and
+`signoff_policy`, `signoffs_require_all`, `type_config`, and
 `completion`.
 
 **Effective "complete" input.** For `type = evaluation`:
 `is_complete = (type_config.evaluation_config.result.outcome is pass or fail)`.
+For `type = inspection`:
+`is_complete = (type_config.inspection_config.result is recorded)`.
 For all other types:
 `is_complete = completion.complete`.
 
 **Priority waterfall:**
 
 1. **Complete / complete_failed.** If `is_complete` AND signoffs are OK:
-   - `complete` if the task is not an evaluation, OR if the evaluation
-     outcome is `pass`.
-   - `complete_failed` if the task is an evaluation and the outcome is
-     `fail`.
+   - `complete` if the task is not an evaluation or inspection, OR if
+     the evaluation outcome is `pass`, OR if the inspection triage is
+     `pass` or `degraded`.
+   - `complete_failed` if the task is an evaluation with outcome
+     `fail`, or an inspection with triage `failing` or
+     `critical_failure`.
 2. **Pending validation.** If `is_complete` AND signoffs are not OK
    → `pending_validation`. Additionally, if the task is an evaluation
    and `completion.complete` is `true` but no outcome is recorded
    (`type_config.evaluation_config.result` is missing or
    `outcome` is neither `pass` nor `fail`) → `pending_validation`.
-3. **Owner action needed.** For non-evaluation tasks only: if work
-   exists (any subtasks or any policy), all subtasks are `complete`,
-   signoffs are OK, and `completion.complete` is `false`
+3. **Owner action needed.** For non-evaluation, non-inspection tasks
+   only: if work exists (any subtasks or any policy), all subtasks are
+   `complete`, signoffs are OK, and `completion.complete` is `false`
    → `owner_action_needed`.
 4. **In progress.** If any subtask is `complete`, or any signoff is
    completed (partial), or the task is an evaluation with a `result`
@@ -74,3 +79,14 @@ For `type = evaluation` with
 `points_possible`. The reference implementation caps awarded points
 during `computeStatus` evaluation. Implementations MUST NOT persist a
 value greater than `points_possible`.
+
+Inspection observations are the deliberate opposite: `measured_value`
+and `found_quantity` are recorded **unclamped** — the observation is
+the data. See `task_type_config.md` → `TaskTypeInspectionResult`.
+
+## Notes
+
+- **v0.1 → v1.0:** this tier's policy list was named
+  `signoff_policy_override` in v0.1. See `taskbook.md` → "Per-tier
+  policy resolution" and `MIGRATION.md`. `type = inspection` is new
+  in v1.0.

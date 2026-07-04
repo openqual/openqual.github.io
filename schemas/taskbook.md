@@ -18,9 +18,8 @@ book-level evaluation scoring.
 | `completion` | `CompletionState` | Yes | Owner completion marker for the book as a whole. |
 | `assignment` | `TaskbookAssignment?` | No | Assignee, evaluator, and host. |
 | `sections` | `List<TaskbookSection>` | Yes | Ordered by `TaskbookSection.order`. May be empty. |
-| `signoff_policy` | `List<SignoffPolicy>` | Yes | Book-level signoff policies. May be empty. |
+| `signoff_policy` | `List<SignoffPolicy>` | Yes | Book-level signoff policies. May be empty. Each tier's policy list is authoritative for that tier; there is no cross-tier inheritance at runtime — see "Per-tier policy resolution" below. |
 | `signoffs_require_all` | `bool` | Yes | When `true`, all policies in `signoff_policy` MUST be completed; when `false`, any one suffices. Defaults to `true`. |
-| `signoff_policy_cascades` | `bool` | Yes | When `true`, the book's signoff policy also applies to sections and tasks that have no override. Defaults to `false`. |
 | `attachments` | `List<Attachment>` | Yes | May be empty. |
 | `notes` | `String?` | No | Free-form notes. |
 | `evaluation_config` | `TaskbookEvaluationConfig?` | No | Book-level scoring mode + threshold. Only meaningful when the book contains scored evaluation tasks. |
@@ -29,6 +28,29 @@ book-level evaluation scoring.
 | `import_status` | `String?` | No | Status from an external-import pipeline (e.g. AI generation). Implementation-defined. |
 | `import_notes` | `String?` | No | Notes from an external-import pipeline. |
 | `source` | `Source?` | No | Source attribution for this taskbook record. Per the provenance inheritance rule in `source.md`, nested types inherit from this value unless they carry their own. |
+
+## Per-tier policy resolution (normative)
+
+Signoff policies attach independently at the book, section, and task
+tiers, under the **same field name** (`signoff_policy`) at every tier.
+Each tier's list is the complete, authoritative policy set for that
+tier. There is **no inheritance, cascading, or override relationship**
+between tiers at runtime: a section with an empty `signoff_policy` has
+no section-level signoff requirement, regardless of what the book
+requires at its own tier.
+
+Authoring convenience ("start this section's policies from a copy of
+the book's") is a client-side affordance — copy the policy list at
+creation time. It is not persisted state and not part of the portable
+record.
+
+> **v0.1 → v1.0:** v0.1 carried a `signoff_policy_cascades` flag on
+> `Taskbook` and `TaskbookSection`, and named the section/task lists
+> `signoff_policy_override`. The flag had no runtime semantics in any
+> known implementation (it was a creation-time client cue), and the
+> "override" name implied an inheritance that never existed. v1.0
+> removes the flag and uses `signoff_policy` uniformly. See
+> `MIGRATION.md`.
 
 ## Methods
 
@@ -80,7 +102,9 @@ Returns an updated `Taskbook` with every section also recomputed via
 
 1. **Autofail propagation.** If any task anywhere in the book has
    `status = complete_failed` AND its evaluation criteria has
-   `autofail = true` → `complete_failed`.
+   `autofail = true`, OR any inspection task's recorded triage is
+   `critical_failure` (see `task_type_config.md` → "Triage
+   derivation") → `complete_failed`.
 2. **Cannot pass.** If `evaluation_config.scoring_mode = aggregated`
    AND `evaluation_config.scoring_config` has a threshold AND
    `points_awarded + points_remaining < effective_threshold_points`

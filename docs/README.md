@@ -10,6 +10,10 @@ spec — for normative content see `../schemas/`.
   copy-pasteable conformance checklist organized by implementation
   role (Producer, Receiver, method implementer). Terse version of
   the Conformance section in `schemas/README.md`.
+- **[export_packaging.md](export_packaging.md)** — how to hand an
+  OpenQual record to a person or another system as a deliverable
+  asset (single self-contained JSON, or a zip container) rather
+  than a text blob.
 - **[timezone_handling.md](timezone_handling.md)** — production
   guidance for timezone-aware evaluation of
   `Certification.isCurrentlyValid`. The reference implementations

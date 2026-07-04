@@ -17,9 +17,8 @@ of the book-level policy and threshold.
 | `progress` | `double` | Yes | `0.0`–`1.0`. Computed from child tasks. |
 | `completion` | `CompletionState` | Yes | Owner completion marker for the section. |
 | `tasks` | `List<TaskbookTask>` | Yes | Ordered by `TaskbookTask.order`. May be empty. |
-| `signoff_policy_override` | `List<SignoffPolicy>` | Yes | Signoff policies for this section. Overrides the book-level policy when non-empty or when the book's `signoff_policy_cascades` is `false`. |
-| `signoffs_require_all` | `bool` | Yes | When `true`, all policies in `signoff_policy_override` MUST be completed. Defaults to `true`. |
-| `signoff_policy_cascades` | `bool` | Yes | When `true`, this section's signoff policy also applies to child tasks that have no override. Defaults to `false`. |
+| `signoff_policy` | `List<SignoffPolicy>` | Yes | Signoff policies for this section. May be empty. This tier's list is authoritative for this tier; no inheritance from the book at runtime (see `taskbook.md` → "Per-tier policy resolution"). |
+| `signoffs_require_all` | `bool` | Yes | When `true`, all policies in `signoff_policy` MUST be completed. Defaults to `true`. |
 | `scoring_config` | `SectionScoringConfig?` | No | Section-level scoring threshold. See below. |
 | `scoring_summary` | `SectionScoringSummary?` | No | Denormalized scoring totals. Recomputed by `computeStatus`. |
 | `attachments` | `List<Attachment>` | Yes | May be empty. |
@@ -32,7 +31,7 @@ of the book-level policy and threshold.
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `min_passing_points` | `double?` | No | Absolute point threshold. Preferred over percentage when both are set. |
-| `min_passing_percentage` | `double?` | No | Fractional threshold in `[0.0, 1.0]`. Values above `1.0` are treated as percent (e.g. `70` → `0.70`) with a warning. Only used when `min_passing_points` is null. |
+| `min_passing_percentage` | `double?` | No | Fractional threshold in `[0.0, 1.0]`. Values outside that range are invalid: producers MUST NOT emit them and receivers MUST reject them. Only used when `min_passing_points` is null. |
 
 ### `SectionScoringSummary`
 
@@ -49,8 +48,8 @@ of the book-level policy and threshold.
 ### `TaskbookSection.computeStatus() → WorkItemStatus`
 
 Pure. Computes the section's `status` given its current `tasks`,
-`scoring_config`, `signoff_policy_override`, `signoffs_require_all`,
-and `completion`. Also populates `scoring_summary` as a side-effect on
+`scoring_config`, `signoff_policy`, `signoffs_require_all`, and
+`completion`. Also populates `scoring_summary` as a side-effect on
 the returned section (when implementations return an updated value) or
 emits it alongside the status (when implementations return just the
 enum).
@@ -59,7 +58,8 @@ enum).
 
 1. **Autofail propagation.** If any child task has
    `status = complete_failed` AND its evaluation criteria has
-   `autofail = true` → `complete_failed`.
+   `autofail = true`, OR any child inspection task's recorded triage
+   is `critical_failure` → `complete_failed`.
 2. **Cannot pass.** If `scoring_config` has a threshold and
    `points_awarded + points_remaining < effective_threshold_points`
    → `complete_failed`. (All remaining scored evaluations, even at
@@ -80,8 +80,8 @@ enum).
    → `in_progress`.
 8. **Default.** → `not_started`.
 
-"Signoffs OK" means: no policies (`signoff_policy_override` is empty)
-→ OK; otherwise, if `signoffs_require_all`, every policy's `completed`
+"Signoffs OK" means: no policies (`signoff_policy` is empty) → OK;
+otherwise, if `signoffs_require_all`, every policy's `completed`
 MUST be `true`; if not, at least one policy's `completed` MUST be
 `true`.
 
@@ -93,9 +93,12 @@ Otherwise returns the arithmetic mean of child tasks' `progress`, or
 
 ## Notes
 
-- The `min_passing_percentage > 1.0` auto-correction is a guard against
-  users entering `70` when they meant `0.70`. A conforming
-  implementation SHOULD log a warning and divide by 100.
 - `scoring_config` is independent of the book-level
   `evaluation_config` — a section may have a stricter threshold than
   the book.
+- **v0.1 → v1.0:** this tier's policy list was named
+  `signoff_policy_override` in v0.1, and the section carried a
+  `signoff_policy_cascades` flag. Both are gone — see `taskbook.md`
+  → "Per-tier policy resolution" and `MIGRATION.md`. The
+  `min_passing_percentage > 1.0` divide-by-100 auto-correction is
+  also removed; out-of-range values are now invalid.

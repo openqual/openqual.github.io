@@ -16,3 +16,8 @@ contains one or more `RenewalRequirement`s.
 - The `requirements_version` is free-form (dates, semver, hashes — all
   acceptable). The standard only requires that a given version string
   corresponds to exactly one components definition.
+- Whether a new `requirements_version` is "compatible" with progress
+  tracked against a prior version is explicitly a **host application
+  concern**. The standard pins versions (`PreviousRenewal` archives the
+  version satisfied); it does not define a cross-version compatibility
+  algebra.

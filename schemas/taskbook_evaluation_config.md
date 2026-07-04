@@ -17,7 +17,7 @@ taskbook's scored evaluation tasks roll up for pass/fail determination.
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `min_passing_points` | `double?` | No | Absolute point threshold. Preferred over percentage when both are set. |
-| `min_passing_percentage` | `double?` | No | Fractional threshold in `[0.0, 1.0]`. Values above `1.0` are auto-corrected to percent (e.g. `70` → `0.70`) with a warning. |
+| `min_passing_percentage` | `double?` | No | Fractional threshold in `[0.0, 1.0]`. Values outside that range are invalid: producers MUST NOT emit them and receivers MUST reject them. |
 
 ## Notes
 
@@ -36,6 +36,7 @@ taskbook's scored evaluation tasks roll up for pass/fail determination.
     threshold fields are `null` because no book-level threshold
     applies. `Taskbook.computeStatus` enters `complete_failed` only
     via autofail propagation or a `complete_failed` section.
-- `min_passing_percentage > 1.0` is auto-corrected to
-  `min_passing_percentage / 100` with a warning, matching the
-  section-level rule in `TaskbookSection.scoring_config`.
+- `min_passing_percentage` outside `[0.0, 1.0]` is invalid at both the
+  book and section levels. (v0.1 auto-corrected `70` → `0.70` with a
+  warning; v1.0 removes the guard — see the migration notes in the
+  release.)

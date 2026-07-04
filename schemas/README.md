@@ -1,10 +1,10 @@
-# OpenQual Schemas — v0.1
+# OpenQual Schemas — v1.0
 
 OpenQual is an open standard for documenting and exchanging qualification
 records — the credentials, skills, and demonstrated competencies that
 prove a person is ready to do the work.
 
-**Version:** 0.1
+**Version:** 1.0
 **License:** Apache 2.0
 **Copyright:** FireCal LLC
 
@@ -81,22 +81,23 @@ Any party may operate a standards-compliant catalog — catalogs may be
 offered free, commercially, or as subscription services. OpenQual does
 not privilege any single catalog provider.
 
-There is one conformance level in v0.1. No tiered compliance.
+There is one conformance level in v1.0. No tiered compliance.
 
-## Scope of v0.1
+## Scope of v1.0
 
-OpenQual v0.1 publishes the portable class definitions and pure methods
+OpenQual v1.0 publishes the portable class definitions and pure methods
 that a third-party developer needs to build a conformant implementation
 of the core areas of the standard. The release is intentionally focused,
 but it must be self-sufficient: a reader should be able to describe a
 person's certifications and the progress they've made on renewing them
-using v0.1 alone.
+using v1.0 alone.
 
-### In scope for v0.1
+### In scope for v1.0
 
 1. **TaskBook core hierarchy** — the taskbook/section/task/subtask tree,
-   signoff policies, assignment, attachments, and the evaluation config
-   that drives book-, section-, and task-level status computation.
+   signoff policies, assignment, attachments, and the evaluation and
+   inspection configs that drive book-, section-, and task-level status
+   computation.
 2. **Certification and credentialing** — the top-level `Certification`
    class, `CertType`, `OrganizationSnapshot` (fills the certifying-agency
    slot and is reusable across organization-shaped slots),
@@ -108,6 +109,13 @@ using v0.1 alone.
 4. **Shared types, constants, and source attribution** —
    `CompletionState`, `StartAndEndTimes`, `Source`, `ValidityPeriod`,
    `neverExpireDate`, and the enums that support the above.
+5. **Training records** — the portable `TrainingRecord` evidence unit,
+   its delivery-modality (`TrainingType`) and provenance-trust
+   (`VerificationProvider`) vocabularies, and the topic-string
+   convention that links training to renewal requirements.
+6. **Structured inspection** — the `inspection` task type: pass/fail,
+   measurement, and count observations with triage semantics, recorded
+   by a person inside the taskbook verification-record shape.
 
 ### Out of scope (app concerns, not standard concerns)
 
@@ -135,9 +143,13 @@ not prescribe their shape:
 OpenQual is about person qualification. It does not model:
 
 - **Asset and equipment records** — apparatus maintenance logs,
-  inventory, PPE inspection, pump testing, or any other equipment-side
+  inventory registries, asset histories, or any other equipment-side
   data. These are a related but distinct domain and belong in separate
-  future projects.
+  future projects. Note the boundary: the `inspection` task type
+  models a *person performing a structured observation* (the
+  verification record — who checked what, with what result); the asset
+  being observed, its registry, and its maintenance history stay out
+  of scope.
 - **Operational workflows** — incident reporting, dispatch, CAD
   integration, response data, or post-incident analysis. These overlap
   with qualification data at the margins (e.g. incidents where a
@@ -154,7 +166,7 @@ subject.
 ### Deferred to later versions
 
 See the Roadmap section below for items that are intentionally out of
-v0.1.
+v1.0.
 
 ## Types
 
@@ -169,6 +181,7 @@ v0.1.
 | `ValidityPeriod` | [validity_period.md](validity_period.md) | Duration + time unit pair. |
 | `CompletionState` | [completion_state.md](completion_state.md) | Unified completion marker used at every hierarchy level. |
 | `StartAndEndTimes` | [start_and_end_times.md](start_and_end_times.md) | Inclusive start/end time pair with derived duration. |
+| `TrainingLocation` | [training_record.md](training_record.md) | Where a training happened (venue/city/region). |
 | Constants | [constants.md](constants.md) | Shared sentinels (e.g. `neverExpireDate`). |
 
 ### Certification and credentialing
@@ -177,6 +190,14 @@ v0.1.
 |------|------|---------|
 | `Certification` | [certification.md](certification.md) | Top-level portable certification — holder, cert type, agency, validity, renewal progress, credential document. |
 | `CertType` | [cert_type.md](cert_type.md) | Portable definition of a certification type — discipline, level, validity period, renewal requirements. |
+| `AuthoritativeCode` | [cert_type.md](cert_type.md) | Authority-issued canonical identifier for a cert type. |
+| `RenewalWindow` | [cert_type.md](cert_type.md) | Training-applicability window vs expiration derivation config. |
+
+### Training
+
+| Type | File | Purpose |
+|------|------|---------|
+| `TrainingRecord` | [training_record.md](training_record.md) | Root-exchangeable record of a completed training — the renewal-evidence unit. |
 
 ### TaskBook hierarchy
 
@@ -192,6 +213,8 @@ v0.1.
 | `TaskbookAssignment` | [taskbook_assignment.md](taskbook_assignment.md) | Assignee + evaluator + host. Pairs `PersonSnapshot` and `OrganizationSnapshot` with assignment timestamps via `AssignedPerson` / `AssignedOrganization`. |
 | `TaskbookSummary` | [taskbook_summary.md](taskbook_summary.md) | Denormalized counts and aggregates for fast display. |
 | `TaskbookEvaluationConfig` | [taskbook_evaluation_config.md](taskbook_evaluation_config.md) | Book-level scoring mode and thresholds. |
+| `TaskTypeInspectionConfig` | [task_type_config.md](task_type_config.md) | Criteria + observed result for inspection tasks. |
+| `TimeThreshold` | [task_type_config.md](task_type_config.md) | Target completion time for timed evaluations. |
 
 ### Certification renewal
 
@@ -224,7 +247,7 @@ Applies at task, section, and taskbook level.
 | `owner_action_needed` | All child work is done; the owner has not yet marked the item complete. Not used at the task level for evaluation-typed tasks. |
 | `pending_validation` | Item has been marked complete but required signoffs are still outstanding, or an evaluation task was marked complete without an outcome recorded. |
 | `complete` | Item is done and all required signoffs are in. |
-| `complete_failed` | Item terminated in a failed state. At the task level this means an evaluation outcome of `fail`. At the section and taskbook levels it additionally fires from autofail propagation, a mathematically-unreachable scoring threshold (cannot-pass), or a completed-but-below-threshold score (did-not-pass). |
+| `complete_failed` | Item terminated in a failed state. At the task level this means an evaluation outcome of `fail`, or an inspection triage of `failing` / `critical_failure`. At the section and taskbook levels it additionally fires from autofail propagation (including inspection `critical_failure`), a mathematically-unreachable scoring threshold (cannot-pass), or a completed-but-below-threshold score (did-not-pass). |
 
 `complete_failed` at section/taskbook level may result from autofail
 propagation, scoring threshold failure, or evaluation failure — not
@@ -266,6 +289,7 @@ Discriminator for the polymorphic `TaskTypeConfig` union.
 | `taskbook` | Task that requires the user to complete a referenced nested taskbook. |
 | `skillsheet` | Task that requires the user to complete a referenced skillsheet. |
 | `cert` | Task that requires the user to hold a referenced certification. |
+| `inspection` | Task recording a structured observation (yes/no condition, measurement against bands, count against expected quantity) with triage semantics. |
 
 ### `EvaluationType`
 
@@ -286,6 +310,71 @@ on `TaskbookEvaluationConfig.scoring_mode`.
 |-------|---------|
 | `aggregated` | Book sums all scored-evaluation points across every section and applies its own threshold. |
 | `per_section` | Book has no overall threshold; each section applies its own. A `complete_failed` section propagates to the book (see `Taskbook.computeStatus`). |
+
+### `InspectionKind`
+
+Shape of an inspection task's observation. Lives on
+`TaskTypeInspectionCriteria.kind`.
+
+| Value | Meaning |
+|-------|---------|
+| `pass_fail` | Yes/no condition check ("is the air horn mounted?"). |
+| `measurement` | Numeric reading evaluated against pass/degraded bands ("air-tank PSI"). |
+| `count` | Quantity evaluated against an expected count ("4 AED pads"). |
+
+### `InspectionTriage`
+
+Derived severity of a recorded inspection observation. See
+`task_type_config.md` → "Triage derivation" for the normative rules.
+
+| Value | Meaning |
+|-------|---------|
+| `pass` | Observation within the passing criteria. |
+| `degraded` | Observation short of passing but within a tolerated band. Behaves as a passing completion for status purposes; worth flagging operationally. |
+| `failing` | Observation failed the criteria. |
+| `critical_failure` | Observation failed criteria marked `critical`. Propagates `complete_failed` to the parent section and book, like evaluation `autofail`. |
+
+### `InspectionAction`
+
+Optional recommended follow-up on an inspection result.
+
+| Value |
+|-------|
+| `replace` |
+| `repair` |
+| `monitor` |
+
+### `TrainingType`
+
+Delivery modality of a training event — how the training was
+delivered, distinct from `Discipline` (the domain) and from topic
+strings (the subject matter). Lives on `TrainingRecord.training_type`.
+
+| Value | Meaning |
+|-------|---------|
+| `lecture` | Classroom / didactic only. |
+| `skills` | Practical / hands-on only. |
+| `lecture_and_skills` | Mixed format. |
+| `online_async` | Self-paced e-learning. |
+| `online_live` | Synchronous webinar / virtual classroom. |
+| `clinical` | Patient-care rotation (EMS especially). |
+| `field_experience` | Ride-along / observer time. |
+| `simulation` | Full-scale simulation or tabletop exercise. |
+| `physical_fitness` | Group fitness training — in the fire service, paid training time logged like classroom hours. |
+| `other` | Modality not listed; populate `training_type_other` on the parent record when precision matters. |
+
+### `VerificationProvider`
+
+Trust classification for a training record's origin. Lives on
+`TrainingRecord.provider_type`.
+
+| Value | Meaning |
+|-------|---------|
+| `self_reported` | The holder entered the record manually. |
+| `internal_lms` | Issued by a hosted learning-management integration. |
+| `accredited_provider` | Formally accredited provider with an external registrar ID. |
+| `capce` | Commission on Accreditation for Pre-Hospital Continuing Education. |
+| `third_party` | Non-accredited external source. |
 
 ### `TaskbookTypes`
 
@@ -346,6 +435,7 @@ parent type with a descriptive string.
 | `dispatch` | Emergency dispatch / communications. |
 | `emergency_management` | Emergency management. |
 | `sar` | Search and rescue. |
+| `aviation` | Aviation operations (helitack, air attack, retardant operations, aerial supervision). |
 | `ski_patrol` | Ski patrol. |
 | `other` | Discipline not listed above; see `discipline_other`. |
 
@@ -408,13 +498,13 @@ application's responsibility to answer "what roles does this user hold
 in which orgs?" at the moment eligibility is evaluated. See
 `signoff_policy.md` for the full matching contract.
 
-What v0.1 does **not** model: the organization's own lifecycle (how it
+What v1.0 does **not** model: the organization's own lifecycle (how it
 is created, governed, dissolved), subunits (stations, shifts, crews),
 or the membership lifecycle (invited, requested, accepted). Richer
 organization modeling is planned for a future version — see Roadmap
 below.
 
-What v0.1 does require of a compliant host: it MUST be able to answer,
+What v1.0 does require of a compliant host: it MUST be able to answer,
 for any user, "what roles does this user hold in which orgs?" —
 represented as `Map<orgId, List<OrgRoles>>` and passed into
 `SignoffPolicy.isEligible`. The role vocabulary is fixed by
@@ -435,7 +525,7 @@ NOT appear in that map for the org in question.
 - **Calendar dates:** a distinct semantic category that uses the same
   `DateTime` type but represents a calendar day in an issuing
   jurisdiction rather than an instant. `Certification.certification_date`
-  and `Certification.expiration_date` are the v0.1 examples.
+  and `Certification.expiration_date` are the original v0.1 examples (unchanged in v1.0).
   Serialized as `YYYY-MM-DD` or `DateTime` at `00:00:00 UTC` on the
   named day; receivers MUST accept both. Comparisons happen at day
   granularity via a deterministic timezone cascade. See
@@ -445,6 +535,20 @@ NOT appear in that map for the org in question.
 - **Required fields:** everything without a `?` is required. When a
   required field is missing from serialized input, an implementation
   MUST raise an error.
+- **Enum wire values (normative):** enum-typed fields serialize as the
+  exact snake_case value names published in each enum's table
+  (`not_started`, `technical_rescue`, `pass_fail`, `critical_failure`).
+  Language bindings may use idiomatic identifier casing in code
+  (Dart/JS `camelCase`) but MUST read and write the published
+  snake_case forms on the wire. Producers MUST NOT emit any other
+  casing; receivers MAY additionally tolerate legacy camelCase forms
+  when consuming pre-1.0 records (see the v0.1 migration notes).
+- **The interop test (design guidance):** a field belongs in the
+  standard only when interoperability requires two independent
+  implementations to agree on its contents. Canonical identity
+  (e.g. `authoritative_codes`) passes; discovery aids (aliases,
+  search terms, synonym lists) fail and belong in catalogs or
+  host applications.
 - **Zero side effects:** no method in this standard performs I/O. All
   methods are pure functions of the receiver's fields and their
   arguments.
@@ -466,6 +570,7 @@ naming the version of the standard it was produced against.
 **Required on:**
 - `Certification` (top-level credential records)
 - `Taskbook` (top-level qualification workflow records)
+- `TrainingRecord` (top-level training-evidence records)
 
 **Format:** `MAJOR.MINOR.PATCH` as a plain string (semantic
 versioning, e.g. `"0.1.0"`). See `constants.md` → `schemaVersion` for
@@ -516,7 +621,7 @@ same terms.
 
 ## Conformance
 
-OpenQual v0.1 has a **single conformance level** — no tiers. This
+OpenQual v1.0 has a **single conformance level** — no tiers. This
 section defines what an implementation MUST do, SHOULD do, and MAY
 do to be considered conformant. Vocabulary follows RFC 2119.
 
@@ -534,7 +639,7 @@ A single application may be both. Each role has its own bar.
 **A Producer MUST:**
 
 - Populate `schema_version` on every top-level portable record it
-  emits (`Certification`, `Taskbook`).
+  emits (`Certification`, `Taskbook`, `TrainingRecord`).
 - Populate every field marked "Required" in the spec for the record
   types it emits.
 - Restrict enum-typed fields to values published in the standard's
@@ -642,7 +747,7 @@ For a condensed, copy-pasteable version of these requirements, see
 
 ### What is not prescribed
 
-OpenQual v0.1 does not prescribe:
+OpenQual v1.0 does not prescribe:
 
 - **Wire format.** Implementations choose JSON, CBOR, Protobuf, or
   anything else. The standard specifies field names, types, and
@@ -663,15 +768,15 @@ OpenQual v0.1 does not prescribe:
 ## Roadmap
 
 Planned expansions to the standard in later versions. See "Scope of
-v0.1" above for the full deferred / out-of-scope split.
+v1.0" above for the full deferred / out-of-scope split.
 
 - **Organization lifecycle modeling** — a richer `Organization` class
   layered on top of `OrganizationSnapshot`, the membership lifecycle
   (invited, requested, accepted), and subunits such as stations.
-  v0.1 publishes `OrganizationSnapshot` as the snapshot-shaped portable
+  v1.0 publishes `OrganizationSnapshot` as the snapshot-shaped portable
   identity type; future versions will add the lifecycle and
   membership layer.
-- **Type-side earned-via linkage.** v0.1 captures earned-via as an
+- **Type-side earned-via linkage.** v1.0 captures earned-via as an
   instance-level snapshot on `Certification` (see
   `certification.md` → "Earned-via linkage"). A type-level statement
   ("this cert type is earned by template X") is deferred to a future
@@ -688,7 +793,12 @@ v0.1" above for the full deferred / out-of-scope split.
 - **Additional `RequirementUnits`** (CE credits, sessions, contact
   hours). The current `hours`-only set will expand once the target
   disciplines' measurement conventions are agreed.
+- **Custody-transfer artifact taxonomy.** A portable
+  member-snapshot / archive shape for records changing custody when
+  a person leaves an organization or an organization dissolves.
+  Proven as a pattern in the field; needs a portable (host-agnostic)
+  redesign before standardization.
 - **`org_officers` / `org_admins` as first-class signoff policy
-  types.** v0.1 expresses them as `org_members` with specific
+  types.** v1.0 expresses them as `org_members` with specific
   `allowedRoles`; promoting them to first-class values is a later
   decision.

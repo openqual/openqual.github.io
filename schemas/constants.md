@@ -34,11 +34,11 @@ value to a different instant.
 
 The string identifying the version of the OpenQual standard a portable
 record was produced against. Every top-level portable record
-(`Certification`, `Taskbook`) MUST carry this value in its
+(`Certification`, `Taskbook`, `TrainingRecord`) MUST carry this value in its
 `schema_version` field; receiving systems use it to decide whether to
 process, reject, or flag a record.
 
-**Value for v0.1:** `"0.1.0"`.
+**Value for v1.0:** `"1.0.0"`.
 
 **Format:** `MAJOR.MINOR.PATCH`, as a plain string (semantic
 versioning). MAJOR, MINOR, and PATCH are non-negative integers.

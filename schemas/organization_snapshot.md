@@ -19,7 +19,7 @@ across holder, instructor, and evaluator slots.
 | `display_name` | `String?` | No | Short form for display, e.g. "NREMT". Falls back to `name` when absent. |
 | `website` | `String?` | No | Organization website URL. |
 | `email` | `String?` | No | Organization contact email. |
-| `phone` | `String?` | No | Organization contact phone. |
+| `phone` | `String?` | No | Organization contact phone. SHOULD be E.164 (`+15055551234`) when the country is known. |
 | `source` | `Source?` | No | Provenance attribution. See `source.md`. |
 
 ## Notes
