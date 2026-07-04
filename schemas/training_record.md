@@ -21,6 +21,7 @@ happened, who delivered it, and what credit it carries.
 | `discipline` | `Discipline?` | No | Primary discipline area. Reuses the standard `Discipline` enum — the same axis `CertType.discipline` uses, so training ↔ cert matching needs no new vocabulary. Use `other` + `discipline_other`. |
 | `discipline_other` | `String?` | No | Required when `discipline = other`. |
 | `training_type` | `TrainingType?` | No | Delivery modality (lecture, skills, clinical, …). See the `TrainingType` enum in `README.md`. Optional — many legacy records won't know. |
+| `training_type_other` | `String?` | No | Required when `training_type = other`; descriptive modality string. Same escape-hatch pattern as `discipline_other`. |
 | `topics` | `List<String>` | Yes | Subject-matter topics this training covered, as authority-namespaced strings (see "Topic strings" in `renewal_component.md`). May be empty. One session often covers several (a pediatric respiratory lecture covers both `"NREMT: Pediatric"` and `"NREMT: Airway"`). |
 | `start_and_end` | `StartAndEndTimes?` | No | When the training happened; carries the derived duration. |
 | `ce_units_earned` | `double?` | No | Continuing-education credit this training carries, in the units convention of the crediting authority (typically hours). This is the user-entered / issuer-stated value — a `TrainingRecord` deliberately has **no** `manually_added_credit` field; bolt-on credit is a certification-level concept (see `renewal_component_progress.md`). |

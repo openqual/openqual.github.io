@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import 'codec.dart';
+
 /// A pair of timestamps for a bounded activity, with a derived duration.
 class StartAndEndTimes {
   final DateTime? startTime;
@@ -25,6 +27,23 @@ class StartAndEndTimes {
     this.durationMs,
     this.durationDisplay,
   });
+
+  /// Reads the wire shape produced by [toMap].
+  factory StartAndEndTimes.fromMap(Map<String, dynamic> m) =>
+      StartAndEndTimes(
+        startTime: readDateTime(m['start_time']),
+        endTime: readDateTime(m['end_time']),
+        durationMs: m['duration_ms'] as int?,
+        durationDisplay: m['duration_display'] as String?,
+      );
+
+  /// Serializes to the snake-case wire shape (see `codec.dart`).
+  Map<String, dynamic> toMap() => {
+        if (startTime != null) 'start_time': startTime,
+        if (endTime != null) 'end_time': endTime,
+        if (durationMs != null) 'duration_ms': durationMs,
+        if (durationDisplay != null) 'duration_display': durationDisplay,
+      };
 
   /// Duration derived from [startTime] and [endTime] when both are set,
   /// falling back to [durationMs].

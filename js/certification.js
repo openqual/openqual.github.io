@@ -14,8 +14,15 @@
 
 'use strict';
 
+const { Attachment } = require('./attachment');
+const { CertType } = require('./cert_type');
+const { readDate, dateToIso } = require('./codec');
 const { neverExpireDate, openqualSchemaVersion } = require('./constants');
 const { CertStatus } = require('./enums');
+const { PersonSnapshot } = require('./person_snapshot');
+const { PreviousRenewals } = require('./previous_renewals');
+const { RenewalProgress } = require('./renewal_progress');
+const { Source } = require('./source');
 
 /**
  * Truncates a Date to the start of its UTC calendar day. Used by
@@ -64,6 +71,73 @@ class Certification {
     this.notes = notes;
     this.source = source;
     Object.freeze(this);
+  }
+
+  /** Reads the wire shape produced by toJSON(). */
+  static fromJSON(m) {
+    return new Certification({
+      schemaVersion: m.schema_version ?? openqualSchemaVersion,
+      holder: PersonSnapshot.fromJSON(m.holder),
+      certType: CertType.fromJSON(m.cert_type),
+      certificationDate: readDate(m.certification_date),
+      expirationDate: readDate(m.expiration_date),
+      issuedCertId: m.issued_cert_id ?? null,
+      issuingLocality: m.issuing_locality ?? null,
+      issuingTimezone: m.issuing_timezone ?? null,
+      status: m.status ?? null,
+      instructor: m.instructor == null ? null : PersonSnapshot.fromJSON(m.instructor),
+      certDocument:
+        m.cert_document == null ? null : Attachment.fromJSON(m.cert_document),
+      earnedViaTaskbook:
+        m.earned_via_taskbook == null
+          ? null
+          : EarnedViaTaskbook.fromJSON(m.earned_via_taskbook),
+      renewalProgress:
+        m.renewal_progress == null
+          ? null
+          : RenewalProgress.fromJSON(m.renewal_progress),
+      previousRenewals:
+        m.previous_renewals == null
+          ? null
+          : PreviousRenewals.fromJSON(m.previous_renewals),
+      attachments: (m.attachments ?? []).map((a) => Attachment.fromJSON(a)),
+      notes: m.notes ?? null,
+      source: m.source == null ? null : Source.fromJSON(m.source),
+    });
+  }
+
+  /** Serializes to the snake-case wire shape (see `codec.js`). */
+  toJSON() {
+    const out = {
+      schema_version: this.schemaVersion,
+      holder: this.holder.toJSON(),
+      cert_type: this.certType.toJSON(),
+    };
+    if (this.certificationDate != null) {
+      out.certification_date = dateToIso(this.certificationDate);
+    }
+    if (this.expirationDate != null) {
+      out.expiration_date = dateToIso(this.expirationDate);
+    }
+    if (this.issuedCertId != null) out.issued_cert_id = this.issuedCertId;
+    if (this.issuingLocality != null) out.issuing_locality = this.issuingLocality;
+    if (this.issuingTimezone != null) out.issuing_timezone = this.issuingTimezone;
+    if (this.status != null) out.status = this.status;
+    if (this.instructor != null) out.instructor = this.instructor.toJSON();
+    if (this.certDocument != null) out.cert_document = this.certDocument.toJSON();
+    if (this.earnedViaTaskbook != null) {
+      out.earned_via_taskbook = this.earnedViaTaskbook.toJSON();
+    }
+    if (this.renewalProgress != null) {
+      out.renewal_progress = this.renewalProgress.toJSON();
+    }
+    if (this.previousRenewals != null) {
+      out.previous_renewals = this.previousRenewals.toJSON();
+    }
+    out.attachments = this.attachments.map((a) => a.toJSON());
+    if (this.notes != null) out.notes = this.notes;
+    if (this.source != null) out.source = this.source.toJSON();
+    return out;
   }
 
   /**
@@ -119,6 +193,25 @@ class EarnedViaTaskbook {
     this.completedAt = completedAt;
     this.source = source;
     Object.freeze(this);
+  }
+
+  /** Reads the wire shape produced by toJSON(). */
+  static fromJSON(m) {
+    return new EarnedViaTaskbook({
+      taskbookTitle: m.taskbook_title,
+      completedAt: readDate(m.completed_at),
+      source: m.source == null ? null : Source.fromJSON(m.source),
+    });
+  }
+
+  /** Serializes to the snake-case wire shape (see `codec.js`). */
+  toJSON() {
+    const out = {
+      taskbook_title: this.taskbookTitle,
+      completed_at: dateToIso(this.completedAt),
+    };
+    if (this.source != null) out.source = this.source.toJSON();
+    return out;
   }
 }
 

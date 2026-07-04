@@ -38,6 +38,36 @@ class RenewalRequirementProgress {
     Object.freeze(this);
   }
 
+  /** Reads the wire shape produced by toJSON(). */
+  static fromJSON(m) {
+    return new RenewalRequirementProgress({
+      requirementId: m.requirement_id,
+      order: m.order,
+      requirementDisplayName: m.requirement_display_name,
+      requirementUnits: m.requirement_units,
+      requirementQuantity: m.requirement_quantity,
+      requirementQuantityCompleted: m.requirement_quantity_completed ?? 0.0,
+      effectiveQuantityCompleted: m.effective_quantity_completed ?? 0.0,
+      appliedTrainingIds: m.applied_training_ids ?? [],
+      manuallyAddedCredit: m.manually_added_credit ?? 0.0,
+    });
+  }
+
+  /** Serializes to the snake-case wire shape (see `codec.js`). */
+  toJSON() {
+    return {
+      requirement_id: this.requirementId,
+      order: this.order,
+      requirement_display_name: this.requirementDisplayName,
+      requirement_units: this.requirementUnits,
+      requirement_quantity: this.requirementQuantity,
+      requirement_quantity_completed: this.requirementQuantityCompleted,
+      effective_quantity_completed: this.effectiveQuantityCompleted,
+      applied_training_ids: [...this.appliedTrainingIds],
+      manually_added_credit: this.manuallyAddedCredit,
+    };
+  }
+
   _with(overrides) {
     return new RenewalRequirementProgress({
       requirementId: this.requirementId,

@@ -14,6 +14,8 @@
 
 'use strict';
 
+const { readDate, dateToIso } = require('./codec');
+
 /**
  * Unified completion marker used at every level of the TaskBook hierarchy.
  * If `complete` is false, `completedAt` must be null.
@@ -26,6 +28,21 @@ class CompletionState {
     this.complete = complete;
     this.completedAt = completedAt;
     Object.freeze(this);
+  }
+
+  /** Reads the wire shape produced by toJSON(). */
+  static fromJSON(m) {
+    return new CompletionState({
+      complete: m.complete ?? false,
+      completedAt: readDate(m.completed_at),
+    });
+  }
+
+  /** Serializes to the snake-case wire shape (see `codec.js`). */
+  toJSON() {
+    const out = { complete: this.complete };
+    if (this.completedAt != null) out.completed_at = dateToIso(this.completedAt);
+    return out;
   }
 
   /** @param {Date} now */

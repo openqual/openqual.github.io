@@ -14,6 +14,7 @@
 
 'use strict';
 
+const { readDate, dateToIso } = require('./codec');
 const { PersonSnapshot } = require('./person_snapshot');
 
 /**
@@ -33,6 +34,25 @@ class SignoffRecord {
     this.signedAt = signedAt;
     this.policyType = policyType;
     Object.freeze(this);
+  }
+
+  /** Reads the wire shape produced by toJSON(). */
+  static fromJSON(m) {
+    return new SignoffRecord({
+      signatory: PersonSnapshot.fromJSON(m.signatory),
+      signatoryRole: m.signatory_role ?? null,
+      signedAt: readDate(m.signed_at),
+      policyType: m.policy_type,
+    });
+  }
+
+  /** Serializes to the snake-case wire shape (see `codec.js`). */
+  toJSON() {
+    const out = { signatory: this.signatory.toJSON() };
+    if (this.signatoryRole != null) out.signatory_role = this.signatoryRole;
+    out.signed_at = dateToIso(this.signedAt);
+    out.policy_type = this.policyType;
+    return out;
   }
 }
 

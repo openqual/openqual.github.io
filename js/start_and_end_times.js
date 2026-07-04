@@ -14,6 +14,8 @@
 
 'use strict';
 
+const { readDate, dateToIso } = require('./codec');
+
 class StartAndEndTimes {
   constructor({
     startTime = null,
@@ -26,6 +28,26 @@ class StartAndEndTimes {
     this.durationMs = durationMs;
     this.durationDisplay = durationDisplay;
     Object.freeze(this);
+  }
+
+  /** Reads the wire shape produced by toJSON(). */
+  static fromJSON(m) {
+    return new StartAndEndTimes({
+      startTime: readDate(m.start_time),
+      endTime: readDate(m.end_time),
+      durationMs: m.duration_ms ?? null,
+      durationDisplay: m.duration_display ?? null,
+    });
+  }
+
+  /** Serializes to the snake-case wire shape (see `codec.js`). */
+  toJSON() {
+    const out = {};
+    if (this.startTime != null) out.start_time = dateToIso(this.startTime);
+    if (this.endTime != null) out.end_time = dateToIso(this.endTime);
+    if (this.durationMs != null) out.duration_ms = this.durationMs;
+    if (this.durationDisplay != null) out.duration_display = this.durationDisplay;
+    return out;
   }
 
   /** Returns duration in milliseconds, or null. */

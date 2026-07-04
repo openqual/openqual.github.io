@@ -14,10 +14,28 @@
 
 'use strict';
 
+const { PreviousRenewal } = require('./previous_renewal');
+
 class PreviousRenewals {
   constructor({ previousRenewals = [] } = {}) {
     this.previousRenewals = Object.freeze([...previousRenewals]);
     Object.freeze(this);
+  }
+
+  /** Reads the wire shape produced by toJSON(). */
+  static fromJSON(m) {
+    return new PreviousRenewals({
+      previousRenewals: (m.previous_renewals ?? []).map((r) =>
+        PreviousRenewal.fromJSON(r),
+      ),
+    });
+  }
+
+  /** Serializes to the snake-case wire shape (see `codec.js`). */
+  toJSON() {
+    return {
+      previous_renewals: this.previousRenewals.map((r) => r.toJSON()),
+    };
   }
 }
 

@@ -38,6 +38,29 @@ class OrganizationSnapshot {
     this.source = source;
     Object.freeze(this);
   }
+
+  /** Reads the wire shape produced by toJSON(). */
+  static fromJSON(m) {
+    return new OrganizationSnapshot({
+      name: m.name,
+      displayName: m.display_name ?? null,
+      website: m.website ?? null,
+      email: m.email ?? null,
+      phone: m.phone ?? null,
+      source: m.source == null ? null : Source.fromJSON(m.source),
+    });
+  }
+
+  /** Serializes to the snake-case wire shape (see `codec.js`). */
+  toJSON() {
+    const out = { name: this.name };
+    if (this.displayName != null) out.display_name = this.displayName;
+    if (this.website != null) out.website = this.website;
+    if (this.email != null) out.email = this.email;
+    if (this.phone != null) out.phone = this.phone;
+    if (this.source != null) out.source = this.source.toJSON();
+    return out;
+  }
 }
 
 module.exports = { OrganizationSnapshot };

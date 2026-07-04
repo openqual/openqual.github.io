@@ -14,10 +14,23 @@
 
 'use strict';
 
+const { Attachment } = require('./attachment');
+const { readDate, dateToIso } = require('./codec');
 const { CompletionState } = require('./completion_state');
 const { neverExpireDate, openqualSchemaVersion } = require('./constants');
-const { WorkItemStatus, TaskbookTypes, TaskTypes, EvaluationType, ScoringMode } = require('./enums');
-const { signoffsOK } = require('./signoff_policy');
+const {
+  WorkItemStatus,
+  TaskbookTypes,
+  TaskTypes,
+  EvaluationType,
+  ScoringMode,
+  InspectionTriage,
+} = require('./enums');
+const { SignoffPolicy, signoffsOK } = require('./signoff_policy');
+const { Source } = require('./source');
+const { StartAndEndTimes } = require('./start_and_end_times');
+const { TaskbookAssignment } = require('./taskbook_assignment');
+const { TaskbookEvaluationConfig } = require('./taskbook_evaluation_config');
 const { TaskbookSection } = require('./taskbook_section');
 const { TaskbookTask } = require('./taskbook_task');
 const { TaskbookSummary, BookScoringSummary } = require('./taskbook_summary');
@@ -33,6 +46,7 @@ function _generateId() {
   return out;
 }
 
+/** The root container in the TaskBook hierarchy. */
 class Taskbook {
   constructor({
     schemaVersion = openqualSchemaVersion,
@@ -47,7 +61,6 @@ class Taskbook {
     sections = [],
     signoffPolicy = [],
     signoffsRequireAll = true,
-    signoffPolicyCascades = false,
     attachments = [],
     notes = null,
     evaluationConfig = null,
@@ -69,7 +82,6 @@ class Taskbook {
     this.sections = Object.freeze([...sections]);
     this.signoffPolicy = Object.freeze([...signoffPolicy]);
     this.signoffsRequireAll = signoffsRequireAll;
-    this.signoffPolicyCascades = signoffPolicyCascades;
     this.attachments = Object.freeze([...attachments]);
     this.notes = notes;
     this.evaluationConfig = evaluationConfig;
@@ -79,6 +91,74 @@ class Taskbook {
     this.importNotes = importNotes;
     this.source = source;
     Object.freeze(this);
+  }
+
+  /** Reads the wire shape produced by toJSON(). */
+  static fromJSON(m) {
+    return new Taskbook({
+      schemaVersion: m.schema_version ?? openqualSchemaVersion,
+      taskbookType: m.taskbook_type ?? TaskbookTypes.TASKBOOK,
+      title: m.title,
+      description: m.description ?? null,
+      dueDate: readDate(m.due_date),
+      status: m.status ?? WorkItemStatus.NOT_STARTED,
+      progress: m.progress ?? 0.0,
+      completion:
+        m.completion == null
+          ? new CompletionState()
+          : CompletionState.fromJSON(m.completion),
+      assignment:
+        m.assignment == null ? null : TaskbookAssignment.fromJSON(m.assignment),
+      sections: (m.sections ?? []).map((s) => TaskbookSection.fromJSON(s)),
+      signoffPolicy: (m.signoff_policy ?? []).map((p) => SignoffPolicy.fromJSON(p)),
+      signoffsRequireAll: m.signoffs_require_all ?? true,
+      attachments: (m.attachments ?? []).map((a) => Attachment.fromJSON(a)),
+      notes: m.notes ?? null,
+      evaluationConfig:
+        m.evaluation_config == null
+          ? null
+          : TaskbookEvaluationConfig.fromJSON(m.evaluation_config),
+      startAndEnd:
+        m.start_and_end == null ? null : StartAndEndTimes.fromJSON(m.start_and_end),
+      taskbookSummary:
+        m.taskbook_summary == null
+          ? null
+          : TaskbookSummary.fromJSON(m.taskbook_summary),
+      importStatus: m.import_status ?? null,
+      importNotes: m.import_notes ?? null,
+      source: m.source == null ? null : Source.fromJSON(m.source),
+    });
+  }
+
+  /** Serializes to the snake-case wire shape (see `codec.js`). */
+  toJSON() {
+    const out = {
+      schema_version: this.schemaVersion,
+      taskbook_type: this.taskbookType,
+      title: this.title,
+    };
+    if (this.description != null) out.description = this.description;
+    if (this.dueDate != null) out.due_date = dateToIso(this.dueDate);
+    out.status = this.status;
+    out.progress = this.progress;
+    out.completion = this.completion.toJSON();
+    if (this.assignment != null) out.assignment = this.assignment.toJSON();
+    out.sections = this.sections.map((s) => s.toJSON());
+    out.signoff_policy = this.signoffPolicy.map((p) => p.toJSON());
+    out.signoffs_require_all = this.signoffsRequireAll;
+    out.attachments = this.attachments.map((a) => a.toJSON());
+    if (this.notes != null) out.notes = this.notes;
+    if (this.evaluationConfig != null) {
+      out.evaluation_config = this.evaluationConfig.toJSON();
+    }
+    if (this.startAndEnd != null) out.start_and_end = this.startAndEnd.toJSON();
+    if (this.taskbookSummary != null) {
+      out.taskbook_summary = this.taskbookSummary.toJSON();
+    }
+    if (this.importStatus != null) out.import_status = this.importStatus;
+    if (this.importNotes != null) out.import_notes = this.importNotes;
+    if (this.source != null) out.source = this.source.toJSON();
+    return out;
   }
 
   /** Parses a JSON string (typically from an AI import). Returns a safe error Taskbook on failure. */
@@ -150,7 +230,7 @@ class Taskbook {
     const section = this.sections[sIdx];
 
     if (!taskId) {
-      const updated = _withSection(section, {
+      const updated = section._with({
         completion: section.completion.markComplete(now),
       });
       return this._with({ sections: _replace(this.sections, sIdx, updated) });
@@ -163,7 +243,7 @@ class Taskbook {
       const updatedTask = task._with({
         completion: task.completion.markComplete(now),
       });
-      const updatedSection = _withSection(section, {
+      const updatedSection = section._with({
         tasks: _replace(section.tasks, tIdx, updatedTask),
       });
       return this._with({ sections: _replace(this.sections, sIdx, updatedSection) });
@@ -175,7 +255,7 @@ class Taskbook {
     const updatedTask = task._with({
       subtasks: _replace(task.subtasks, stIdx, updatedSubtask),
     });
-    const updatedSection = _withSection(section, {
+    const updatedSection = section._with({
       tasks: _replace(section.tasks, tIdx, updatedTask),
     });
     return this._with({ sections: _replace(this.sections, sIdx, updatedSection) });
@@ -221,12 +301,14 @@ class Taskbook {
     const isAggregated = mode === ScoringMode.AGGREGATED;
     const isPerSection = mode === ScoringMode.PER_SECTION;
 
+    // Book-level threshold (aggregated mode only). `minPassingPercentage`
+    // is validated to [0.0, 1.0] at construction (MIGRATION Rule 4) — no
+    // legacy ÷100 normalization.
     let effThresholdPoints = null;
     let effThresholdPercentage = null;
     if (isAggregated) {
       const minPts = this.evaluationConfig?.scoringConfig?.minPassingPoints ?? null;
-      let minPct = this.evaluationConfig?.scoringConfig?.minPassingPercentage ?? null;
-      if (minPct != null && minPct > 1.0) minPct = minPct / 100.0;
+      const minPct = this.evaluationConfig?.scoringConfig?.minPassingPercentage ?? null;
       if (minPts != null) {
         effThresholdPoints = minPts;
         if (pointsPossible > 0) effThresholdPercentage = minPts / pointsPossible;
@@ -243,9 +325,16 @@ class Taskbook {
     const failedPoints =
       isAggregated && hasThreshold && allScoredEvalsDone && pointsAwarded < effThresholdPoints;
 
+    // Autofail propagation: evaluation autofail + inspection
+    // critical_failure (the inspection counterpart — see
+    // schemas/taskbook.md).
     const hasAutofailFailure = allTasks.some((t) => {
       if (t.status !== WorkItemStatus.COMPLETE_FAILED) return false;
-      return t.typeConfig?.evaluationConfig?.criteria?.autofail === true;
+      if (t.typeConfig?.evaluationConfig?.criteria?.autofail === true) return true;
+      return (
+        t.typeConfig?.inspectionConfig?.result?.triage ===
+        InspectionTriage.CRITICAL_FAILURE
+      );
     });
     const hasFailedSection = computedSections.some(
       (s) => s.status === WorkItemStatus.COMPLETE_FAILED,
@@ -299,14 +388,15 @@ class Taskbook {
     const countSections = (s) =>
       computedSections.filter((sec) => sec.status === s).length;
 
+    // Signoff totals across book, sections, and tasks.
     let signoffsRequiredTotal = this.signoffPolicy.length;
     let signoffsCompletedTotal = this.signoffPolicy.filter((p) => p.completed).length;
     for (const s of computedSections) {
-      signoffsRequiredTotal += s.signoffPolicyOverride.length;
-      signoffsCompletedTotal += s.signoffPolicyOverride.filter((p) => p.completed).length;
+      signoffsRequiredTotal += s.signoffPolicy.length;
+      signoffsCompletedTotal += s.signoffPolicy.filter((p) => p.completed).length;
       for (const t of s.tasks) {
-        signoffsRequiredTotal += t.signoffPolicyOverride.length;
-        signoffsCompletedTotal += t.signoffPolicyOverride.filter((p) => p.completed).length;
+        signoffsRequiredTotal += t.signoffPolicy.length;
+        signoffsCompletedTotal += t.signoffPolicy.filter((p) => p.completed).length;
       }
     }
 
@@ -317,8 +407,8 @@ class Taskbook {
             pointsPossible,
             pointsAwarded,
             pointsRemaining,
-            effectiveThresholdPoints,
-            effectiveThresholdPercentage,
+            effectiveThresholdPoints: effThresholdPoints,
+            effectiveThresholdPercentage: effThresholdPercentage,
           });
 
     const summary = new TaskbookSummary({
@@ -371,6 +461,7 @@ class Taskbook {
 
   _with(overrides) {
     return new Taskbook({
+      schemaVersion: this.schemaVersion,
       taskbookType: this.taskbookType,
       title: this.title,
       description: this.description,
@@ -382,7 +473,6 @@ class Taskbook {
       sections: this.sections,
       signoffPolicy: this.signoffPolicy,
       signoffsRequireAll: this.signoffsRequireAll,
-      signoffPolicyCascades: this.signoffPolicyCascades,
       attachments: this.attachments,
       notes: this.notes,
       evaluationConfig: this.evaluationConfig,
@@ -390,6 +480,7 @@ class Taskbook {
       taskbookSummary: this.taskbookSummary,
       importStatus: this.importStatus,
       importNotes: this.importNotes,
+      source: this.source,
       ...overrides,
     });
   }
@@ -399,28 +490,6 @@ function _replace(arr, idx, value) {
   const out = [...arr];
   out[idx] = value;
   return out;
-}
-
-function _withSection(section, overrides) {
-  return new TaskbookSection({
-    id: section.id,
-    order: section.order,
-    title: section.title,
-    description: section.description,
-    dueDate: section.dueDate,
-    status: section.status,
-    progress: section.progress,
-    completion: section.completion,
-    tasks: section.tasks,
-    signoffPolicyOverride: section.signoffPolicyOverride,
-    signoffsRequireAll: section.signoffsRequireAll,
-    signoffPolicyCascades: section.signoffPolicyCascades,
-    scoringConfig: section.scoringConfig,
-    scoringSummary: section.scoringSummary,
-    attachments: section.attachments,
-    notes: section.notes,
-    ...overrides,
-  });
 }
 
 module.exports = { Taskbook };

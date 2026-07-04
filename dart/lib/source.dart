@@ -18,4 +18,16 @@ class Source {
   final String? canonicalSource;
 
   const Source({this.canonicalId, this.canonicalSource});
+
+  /// Reads the wire shape produced by [toMap].
+  factory Source.fromMap(Map<String, dynamic> m) => Source(
+        canonicalId: m['canonical_id'] as String?,
+        canonicalSource: m['canonical_source'] as String?,
+      );
+
+  /// Serializes to the snake-case wire shape (see `codec.dart`).
+  Map<String, dynamic> toMap() => {
+        if (canonicalId != null) 'canonical_id': canonicalId,
+        if (canonicalSource != null) 'canonical_source': canonicalSource,
+      };
 }

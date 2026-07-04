@@ -15,12 +15,31 @@
 'use strict';
 
 const { RenewalStatus } = require('./enums');
+const { RenewalComponentProgress } = require('./renewal_component_progress');
 
 class RenewalProgress {
   constructor({ requirementsVersion, components = [] }) {
     this.requirementsVersion = requirementsVersion;
     this.components = Object.freeze([...components]);
     Object.freeze(this);
+  }
+
+  /** Reads the wire shape produced by toJSON(). */
+  static fromJSON(m) {
+    return new RenewalProgress({
+      requirementsVersion: m.requirements_version,
+      components: (m.components ?? []).map((c) =>
+        RenewalComponentProgress.fromJSON(c),
+      ),
+    });
+  }
+
+  /** Serializes to the snake-case wire shape (see `codec.js`). */
+  toJSON() {
+    return {
+      requirements_version: this.requirementsVersion,
+      components: this.components.map((c) => c.toJSON()),
+    };
   }
 
   /** Pure. Computes the renewal's current status. */

@@ -12,10 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import 'codec.dart';
 import 'enums.dart';
 import 'organization_snapshot.dart';
 import 'person_snapshot.dart';
 import 'signoff_record.dart';
+import 'wire.dart';
 
 /// Defines who may sign off on a taskbook, section, or task.
 class SignoffPolicy {
@@ -38,6 +40,39 @@ class SignoffPolicy {
     this.completionTimestamp,
     this.signoffRecord,
   });
+
+  /// Reads the wire shape produced by [toMap].
+  factory SignoffPolicy.fromMap(Map<String, dynamic> m) => SignoffPolicy(
+        id: m['id'] as String,
+        type: signoffPolicyTypeFromWire(m['type'] as String),
+        allowedUsers: readStringList(m['allowed_users']),
+        allowedOrgs: readMapList(m['allowed_orgs'])
+            .map(OrganizationSnapshot.fromMap)
+            .toList(),
+        allowedRoles:
+            readStringList(m['allowed_roles']).map(orgRolesFromWire).toList(),
+        completed: (m['completed'] as bool?) ?? false,
+        completionTimestamp: readDateTime(m['completion_timestamp']),
+        signoffRecord: m['signoff_record'] == null
+            ? null
+            : SignoffRecord.fromMap(
+                (m['signoff_record'] as Map).cast<String, dynamic>()),
+      );
+
+  /// Serializes to the snake-case wire shape (see `codec.dart`).
+  Map<String, dynamic> toMap() => {
+        'id': id,
+        'type': wireValue(type),
+        if (allowedUsers.isNotEmpty) 'allowed_users': allowedUsers,
+        if (allowedOrgs.isNotEmpty)
+          'allowed_orgs': allowedOrgs.map((o) => o.toMap()).toList(),
+        if (allowedRoles.isNotEmpty)
+          'allowed_roles': allowedRoles.map(wireValue).toList(),
+        'completed': completed,
+        if (completionTimestamp != null)
+          'completion_timestamp': completionTimestamp,
+        if (signoffRecord != null) 'signoff_record': signoffRecord!.toMap(),
+      };
 
   /// Returns whether [userId] is eligible to sign this policy.
   ///

@@ -14,6 +14,8 @@
 
 'use strict';
 
+const { RenewalRequirementProgress } = require('./renewal_requirement_progress');
+
 class RenewalComponentProgress {
   constructor({
     componentId,
@@ -38,6 +40,40 @@ class RenewalComponentProgress {
     this.appliedTrainingIds = Object.freeze([...appliedTrainingIds]);
     this.manuallyAddedCredit = manuallyAddedCredit;
     Object.freeze(this);
+  }
+
+  /** Reads the wire shape produced by toJSON(). */
+  static fromJSON(m) {
+    return new RenewalComponentProgress({
+      componentId: m.component_id,
+      order: m.order,
+      componentName: m.component_name,
+      componentUnits: m.component_units,
+      componentQuantity: m.component_quantity,
+      componentQuantityCompleted: m.component_quantity_completed ?? 0.0,
+      effectiveQuantityCompleted: m.effective_quantity_completed ?? 0.0,
+      requirements: (m.requirements ?? []).map((r) =>
+        RenewalRequirementProgress.fromJSON(r),
+      ),
+      appliedTrainingIds: m.applied_training_ids ?? [],
+      manuallyAddedCredit: m.manually_added_credit ?? 0.0,
+    });
+  }
+
+  /** Serializes to the snake-case wire shape (see `codec.js`). */
+  toJSON() {
+    return {
+      component_id: this.componentId,
+      order: this.order,
+      component_name: this.componentName,
+      component_units: this.componentUnits,
+      component_quantity: this.componentQuantity,
+      component_quantity_completed: this.componentQuantityCompleted,
+      effective_quantity_completed: this.effectiveQuantityCompleted,
+      requirements: this.requirements.map((r) => r.toJSON()),
+      applied_training_ids: [...this.appliedTrainingIds],
+      manually_added_credit: this.manuallyAddedCredit,
+    };
   }
 
   _with(overrides) {

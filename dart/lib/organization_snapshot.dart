@@ -33,4 +33,27 @@ class OrganizationSnapshot {
     this.phone,
     this.source,
   });
+
+  /// Reads the wire shape produced by [toMap].
+  factory OrganizationSnapshot.fromMap(Map<String, dynamic> m) =>
+      OrganizationSnapshot(
+        name: m['name'] as String,
+        displayName: m['display_name'] as String?,
+        website: m['website'] as String?,
+        email: m['email'] as String?,
+        phone: m['phone'] as String?,
+        source: m['source'] == null
+            ? null
+            : Source.fromMap((m['source'] as Map).cast<String, dynamic>()),
+      );
+
+  /// Serializes to the snake-case wire shape (see `codec.dart`).
+  Map<String, dynamic> toMap() => {
+        'name': name,
+        if (displayName != null) 'display_name': displayName,
+        if (website != null) 'website': website,
+        if (email != null) 'email': email,
+        if (phone != null) 'phone': phone,
+        if (source != null) 'source': source!.toMap(),
+      };
 }

@@ -14,18 +14,57 @@
 
 'use strict';
 
+const { Attachment } = require('./attachment');
+const { readDate, dateToIso } = require('./codec');
 const { CompletionState } = require('./completion_state');
-const { WorkItemStatus, TaskTypes, EvaluationType } = require('./enums');
-const { signoffsOK } = require('./signoff_policy');
+const {
+  WorkItemStatus,
+  TaskTypes,
+  EvaluationType,
+  InspectionTriage,
+} = require('./enums');
+const { SignoffPolicy, signoffsOK } = require('./signoff_policy');
+const { TaskbookTask } = require('./taskbook_task');
 
+/**
+ * Section-level scoring threshold.
+ *
+ * `minPassingPercentage` must be in [0.0, 1.0] (a fraction, not a
+ * percent value) — see MIGRATION Rule 4.
+ */
 class SectionScoringConfig {
   constructor({ minPassingPoints = null, minPassingPercentage = null } = {}) {
+    if (
+      minPassingPercentage != null &&
+      (minPassingPercentage < 0.0 || minPassingPercentage > 1.0)
+    ) {
+      throw new RangeError('minPassingPercentage must be in [0.0, 1.0]');
+    }
     this.minPassingPoints = minPassingPoints;
     this.minPassingPercentage = minPassingPercentage;
     Object.freeze(this);
   }
+
+  /** Reads the wire shape produced by toJSON(). */
+  static fromJSON(m) {
+    return new SectionScoringConfig({
+      minPassingPoints: m.min_passing_points ?? null,
+      minPassingPercentage: m.min_passing_percentage ?? null,
+    });
+  }
+
+  /** Serializes to the snake-case wire shape (see `codec.js`). */
+  toJSON() {
+    const out = {};
+    if (this.minPassingPoints != null) out.min_passing_points = this.minPassingPoints;
+    if (this.minPassingPercentage != null) {
+      out.min_passing_percentage = this.minPassingPercentage;
+    }
+    return out;
+  }
 }
 
+/** Denormalized scoring totals for a section. */
 class SectionScoringSummary {
   constructor({
     pointsPossible,
@@ -41,8 +80,36 @@ class SectionScoringSummary {
     this.effectiveThresholdPercentage = effectiveThresholdPercentage;
     Object.freeze(this);
   }
+
+  /** Reads the wire shape produced by toJSON(). */
+  static fromJSON(m) {
+    return new SectionScoringSummary({
+      pointsPossible: m.points_possible ?? 0.0,
+      pointsAwarded: m.points_awarded ?? 0.0,
+      pointsRemaining: m.points_remaining ?? 0.0,
+      effectiveThresholdPoints: m.effective_threshold_points ?? null,
+      effectiveThresholdPercentage: m.effective_threshold_percentage ?? null,
+    });
+  }
+
+  /** Serializes to the snake-case wire shape (see `codec.js`). */
+  toJSON() {
+    const out = {
+      points_possible: this.pointsPossible,
+      points_awarded: this.pointsAwarded,
+      points_remaining: this.pointsRemaining,
+    };
+    if (this.effectiveThresholdPoints != null) {
+      out.effective_threshold_points = this.effectiveThresholdPoints;
+    }
+    if (this.effectiveThresholdPercentage != null) {
+      out.effective_threshold_percentage = this.effectiveThresholdPercentage;
+    }
+    return out;
+  }
 }
 
+/** An ordered group of tasks within a Taskbook. */
 class TaskbookSection {
   constructor({
     id,
@@ -54,9 +121,8 @@ class TaskbookSection {
     progress = 0.0,
     completion = new CompletionState(),
     tasks = [],
-    signoffPolicyOverride = [],
+    signoffPolicy = [],
     signoffsRequireAll = true,
-    signoffPolicyCascades = false,
     scoringConfig = null,
     scoringSummary = null,
     attachments = [],
@@ -71,14 +137,68 @@ class TaskbookSection {
     this.progress = progress;
     this.completion = completion;
     this.tasks = Object.freeze([...tasks]);
-    this.signoffPolicyOverride = Object.freeze([...signoffPolicyOverride]);
+    // This tier's signoff policies. Authoritative for this tier; no
+    // runtime inheritance from the book (named `signoff_policy_override`
+    // in v0.1 — see MIGRATION Rule 1).
+    this.signoffPolicy = Object.freeze([...signoffPolicy]);
     this.signoffsRequireAll = signoffsRequireAll;
-    this.signoffPolicyCascades = signoffPolicyCascades;
     this.scoringConfig = scoringConfig;
     this.scoringSummary = scoringSummary;
     this.attachments = Object.freeze([...attachments]);
     this.notes = notes;
     Object.freeze(this);
+  }
+
+  /** Reads the wire shape produced by toJSON(). */
+  static fromJSON(m) {
+    return new TaskbookSection({
+      id: m.id,
+      order: m.order,
+      title: m.title,
+      description: m.description ?? null,
+      dueDate: readDate(m.due_date),
+      status: m.status ?? WorkItemStatus.NOT_STARTED,
+      progress: m.progress ?? 0.0,
+      completion:
+        m.completion == null
+          ? new CompletionState()
+          : CompletionState.fromJSON(m.completion),
+      tasks: (m.tasks ?? []).map((t) => TaskbookTask.fromJSON(t)),
+      signoffPolicy: (m.signoff_policy ?? []).map((p) => SignoffPolicy.fromJSON(p)),
+      signoffsRequireAll: m.signoffs_require_all ?? true,
+      scoringConfig:
+        m.scoring_config == null
+          ? null
+          : SectionScoringConfig.fromJSON(m.scoring_config),
+      scoringSummary:
+        m.scoring_summary == null
+          ? null
+          : SectionScoringSummary.fromJSON(m.scoring_summary),
+      attachments: (m.attachments ?? []).map((a) => Attachment.fromJSON(a)),
+      notes: m.notes ?? null,
+    });
+  }
+
+  /** Serializes to the snake-case wire shape (see `codec.js`). */
+  toJSON() {
+    const out = {
+      id: this.id,
+      order: this.order,
+      title: this.title,
+    };
+    if (this.description != null) out.description = this.description;
+    if (this.dueDate != null) out.due_date = dateToIso(this.dueDate);
+    out.status = this.status;
+    out.progress = this.progress;
+    out.completion = this.completion.toJSON();
+    out.tasks = this.tasks.map((t) => t.toJSON());
+    out.signoff_policy = this.signoffPolicy.map((p) => p.toJSON());
+    out.signoffs_require_all = this.signoffsRequireAll;
+    if (this.scoringConfig != null) out.scoring_config = this.scoringConfig.toJSON();
+    if (this.scoringSummary != null) out.scoring_summary = this.scoringSummary.toJSON();
+    out.attachments = this.attachments.map((a) => a.toJSON());
+    if (this.notes != null) out.notes = this.notes;
+    return out;
   }
 
   /** Returns a new section with its status, progress, tasks, and scoring summary recomputed. */
@@ -128,11 +248,12 @@ class TaskbookSection {
     const maxPossible = pointsAwarded + pointsRemaining;
     const allScoredDone = scoredTasks.length > 0 && pointsRemaining === 0;
 
+    // Thresholds. `minPassingPercentage` is validated to [0.0, 1.0] at
+    // construction (MIGRATION Rule 4) — no legacy ÷100 normalization.
     let effThresholdPoints = null;
     let effThresholdPercentage = null;
     const sc = this.scoringConfig;
-    let minPct = sc?.minPassingPercentage ?? null;
-    if (minPct != null && minPct > 1.0) minPct = minPct / 100.0;
+    const minPct = sc?.minPassingPercentage ?? null;
     if (sc?.minPassingPoints != null) {
       effThresholdPoints = sc.minPassingPoints;
       if (pointsPossible > 0) effThresholdPercentage = sc.minPassingPoints / pointsPossible;
@@ -158,18 +279,25 @@ class TaskbookSection {
     const doneCount = counts.complete + counts.completeFailed;
     const allTasksDone = counts.total === 0 || doneCount === counts.total;
 
-    const hasPolicy = this.signoffPolicyOverride.length > 0;
-    const sOK = signoffsOK(this.signoffPolicyOverride, this.signoffsRequireAll);
+    const hasPolicy = this.signoffPolicy.length > 0;
+    const sOK = signoffsOK(this.signoffPolicy, this.signoffsRequireAll);
     const signoffInProgress =
-      hasPolicy && !sOK && this.signoffPolicyOverride.some((p) => p.completed);
+      hasPolicy && !sOK && this.signoffPolicy.some((p) => p.completed);
 
     const workExists = counts.total > 0 || hasPolicy;
     const isComplete = this.completion.complete;
-    const hasAutofailFailure = computedTasks.some(
-      (t) =>
-        t.status === WorkItemStatus.COMPLETE_FAILED &&
-        t.typeConfig?.evaluationConfig?.criteria?.autofail === true,
-    );
+
+    // Autofail propagation: evaluation autofail + inspection
+    // critical_failure (the inspection counterpart — see
+    // schemas/taskbook_section.md).
+    const hasAutofailFailure = computedTasks.some((t) => {
+      if (t.status !== WorkItemStatus.COMPLETE_FAILED) return false;
+      if (t.typeConfig?.evaluationConfig?.criteria?.autofail === true) return true;
+      return (
+        t.typeConfig?.inspectionConfig?.result?.triage ===
+        InspectionTriage.CRITICAL_FAILURE
+      );
+    });
 
     let status = WorkItemStatus.NOT_STARTED;
     if (hasAutofailFailure) status = WorkItemStatus.COMPLETE_FAILED;
@@ -198,20 +326,10 @@ class TaskbookSection {
       progress = 0.0;
     }
 
-    return new TaskbookSection({
-      id: this.id,
-      order: this.order,
-      title: this.title,
-      description: this.description,
-      dueDate: this.dueDate,
+    return this._with({
       status,
       progress,
-      completion: this.completion,
       tasks: computedTasks,
-      signoffPolicyOverride: this.signoffPolicyOverride,
-      signoffsRequireAll: this.signoffsRequireAll,
-      signoffPolicyCascades: this.signoffPolicyCascades,
-      scoringConfig: this.scoringConfig,
       scoringSummary: new SectionScoringSummary({
         pointsPossible,
         pointsAwarded,
@@ -219,8 +337,27 @@ class TaskbookSection {
         effectiveThresholdPoints: effThresholdPoints,
         effectiveThresholdPercentage: effThresholdPercentage,
       }),
+    });
+  }
+
+  _with(overrides) {
+    return new TaskbookSection({
+      id: this.id,
+      order: this.order,
+      title: this.title,
+      description: this.description,
+      dueDate: this.dueDate,
+      status: this.status,
+      progress: this.progress,
+      completion: this.completion,
+      tasks: this.tasks,
+      signoffPolicy: this.signoffPolicy,
+      signoffsRequireAll: this.signoffsRequireAll,
+      scoringConfig: this.scoringConfig,
+      scoringSummary: this.scoringSummary,
       attachments: this.attachments,
       notes: this.notes,
+      ...overrides,
     });
   }
 }

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import 'codec.dart';
 import 'renewal_requirement.dart';
 
 class RenewalComponent {
@@ -22,6 +23,12 @@ class RenewalComponent {
   final String componentUnits;
   final List<RenewalRequirement> requirements;
 
+  /// Subject-matter topics training must cover to count toward this
+  /// component, as authority-namespaced strings (see "Topic strings"
+  /// in schemas/renewal_component.md). Empty means any topic in the
+  /// discipline counts.
+  final List<String> topics;
+
   const RenewalComponent({
     required this.componentId,
     required this.order,
@@ -29,5 +36,31 @@ class RenewalComponent {
     required this.componentQuantity,
     required this.componentUnits,
     this.requirements = const [],
+    this.topics = const [],
   });
+
+  /// Reads the wire shape produced by [toMap].
+  factory RenewalComponent.fromMap(Map<String, dynamic> m) =>
+      RenewalComponent(
+        componentId: m['component_id'] as String,
+        order: (m['order'] as num).toInt(),
+        componentName: m['component_name'] as String,
+        componentQuantity: (m['component_quantity'] as num).toDouble(),
+        componentUnits: m['component_units'] as String,
+        requirements: readMapList(m['requirements'])
+            .map(RenewalRequirement.fromMap)
+            .toList(),
+        topics: readStringList(m['topics']),
+      );
+
+  /// Serializes to the snake-case wire shape (see `codec.dart`).
+  Map<String, dynamic> toMap() => {
+        'component_id': componentId,
+        'order': order,
+        'component_name': componentName,
+        'component_quantity': componentQuantity,
+        'component_units': componentUnits,
+        'requirements': requirements.map((r) => r.toMap()).toList(),
+        'topics': topics,
+      };
 }

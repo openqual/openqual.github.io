@@ -20,18 +20,20 @@ Target runtime: Node 18+.
 ```
 js/
   enums.js                          # all enums (frozen object maps)
+  codec.js                          # shared toJSON/fromJSON date helpers
   completion_state.js
   start_and_end_times.js
   signoff_policy.js                 # + SignoffPolicy#isEligible, signoffsOK
   signoff_record.js
-  task_type_config.js               # + eval criteria/result/subconfigs
+  task_type_config.js               # + eval/inspection criteria/results, TimeThreshold, deriveTriage
   source.js
-  person_snapshot.js
-  attachment.js                     # + inline content for portability
+  person_snapshot.js                # + avatarUrl, signatureImage
+  attachment.js                     # + inline content, uploadedBy, download URL
   validity_period.js
   organization_snapshot.js
-  cert_type.js
+  cert_type.js                      # + authoritative codes, renewal-window derivation
   certification.js                  # + isCurrentlyValid
+  training_record.js                # TrainingRecord + TrainingLocation (Tier A)
   taskbook_assignment.js            # + assignee, evaluator, host org
   taskbook_subtask.js
   taskbook_task.js                  # + computeStatus, withClampedPoints
@@ -48,6 +50,7 @@ js/
   previous_renewal.js
   previous_renewals.js
   certification_progress.js         # calculateCertificationProgress
+  test/                             # plain node:test suite (`node --test test/`)
 ```
 
 ## Usage sketch
@@ -77,5 +80,23 @@ present) to produce modified copies.
 
 ## Serialization
 
-Intentionally not included. The standard does not prescribe a wire
-format; host applications supply their own mapping.
+Every value object implements `toJSON()` — producing the published
+snake_case wire shape with ISO-8601 UTC date strings, so
+`JSON.stringify` picks it up automatically — and a static
+`fromJSON(obj)` that reads the same shape (dates as ISO strings,
+`Date` instances, or duck-typed `toDate()` objects). Optional fields
+are omitted when null; required list fields serialize even when
+empty. Enum properties already hold the published wire strings, so
+they pass through unchanged. The shapes are identical to the Dart
+binding's `toMap()` / `fromMap()` output.
+
+## Tests
+
+```
+node --test test/
+```
+
+No dependencies — the suite uses `node:test` + `node:assert` only.
+It mirrors the Dart binding's test tables (triage derivation,
+inspection status branches, renewal-window derivation, full-fixture
+round-trips) to keep the two bindings in behavioral lockstep.

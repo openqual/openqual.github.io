@@ -20,6 +20,22 @@ class Source {
     this.canonicalSource = canonicalSource;
     Object.freeze(this);
   }
+
+  /** Reads the wire shape produced by toJSON(). */
+  static fromJSON(m) {
+    return new Source({
+      canonicalId: m.canonical_id ?? null,
+      canonicalSource: m.canonical_source ?? null,
+    });
+  }
+
+  /** Serializes to the snake-case wire shape (see `codec.js`). */
+  toJSON() {
+    const out = {};
+    if (this.canonicalId != null) out.canonical_id = this.canonicalId;
+    if (this.canonicalSource != null) out.canonical_source = this.canonicalSource;
+    return out;
+  }
 }
 
 module.exports = { Source };

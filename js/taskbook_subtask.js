@@ -14,6 +14,7 @@
 
 'use strict';
 
+const { Attachment } = require('./attachment');
 const { CompletionState } = require('./completion_state');
 
 class TaskbookSubtask {
@@ -30,6 +31,31 @@ class TaskbookSubtask {
     this.completion = completion;
     this.attachments = Object.freeze([...attachments]);
     Object.freeze(this);
+  }
+
+  /** Reads the wire shape produced by toJSON(). */
+  static fromJSON(m) {
+    return new TaskbookSubtask({
+      id: m.id,
+      order: m.order,
+      title: m.title,
+      completion:
+        m.completion == null
+          ? new CompletionState()
+          : CompletionState.fromJSON(m.completion),
+      attachments: (m.attachments ?? []).map((a) => Attachment.fromJSON(a)),
+    });
+  }
+
+  /** Serializes to the snake-case wire shape (see `codec.js`). */
+  toJSON() {
+    return {
+      id: this.id,
+      order: this.order,
+      title: this.title,
+      completion: this.completion.toJSON(),
+      attachments: this.attachments.map((a) => a.toJSON()),
+    };
   }
 
   withCompletion(completion) {

@@ -14,14 +14,21 @@
 
 'use strict';
 
+const { Attachment } = require('./attachment');
+const { readDate, dateToIso } = require('./codec');
 const { CompletionState } = require('./completion_state');
 const { WorkItemStatus, TaskTypes, EvaluationOutcome, EvaluationType } = require('./enums');
-const { signoffsOK } = require('./signoff_policy');
+const { SignoffPolicy, signoffsOK } = require('./signoff_policy');
 const {
   TaskTypeConfig,
   TaskTypeEvaluationConfig,
 } = require('./task_type_config');
+const { TaskbookSubtask } = require('./taskbook_subtask');
 
+/**
+ * A leaf work unit within a TaskbookSection. Polymorphic via `type`
+ * and `typeConfig`.
+ */
 class TaskbookTask {
   constructor({
     id,
@@ -35,7 +42,7 @@ class TaskbookTask {
     progress = 0.0,
     completion = new CompletionState(),
     subtasks = [],
-    signoffPolicyOverride = [],
+    signoffPolicy = [],
     signoffsRequireAll = true,
     attachments = [],
     notes = null,
@@ -51,21 +58,72 @@ class TaskbookTask {
     this.progress = progress;
     this.completion = completion;
     this.subtasks = Object.freeze([...subtasks]);
-    this.signoffPolicyOverride = Object.freeze([...signoffPolicyOverride]);
+    // This tier's signoff policies. Authoritative for this tier; no
+    // runtime inheritance from the section or book (named
+    // `signoff_policy_override` in v0.1 — see MIGRATION Rule 1).
+    this.signoffPolicy = Object.freeze([...signoffPolicy]);
     this.signoffsRequireAll = signoffsRequireAll;
     this.attachments = Object.freeze([...attachments]);
     this.notes = notes;
     Object.freeze(this);
   }
 
+  /** Reads the wire shape produced by toJSON(). */
+  static fromJSON(m) {
+    return new TaskbookTask({
+      id: m.id,
+      order: m.order,
+      type: m.type ?? TaskTypes.TASK,
+      typeConfig: m.type_config == null ? null : TaskTypeConfig.fromJSON(m.type_config),
+      title: m.title,
+      description: m.description ?? null,
+      dueDate: readDate(m.due_date),
+      status: m.status ?? WorkItemStatus.NOT_STARTED,
+      progress: m.progress ?? 0.0,
+      completion:
+        m.completion == null
+          ? new CompletionState()
+          : CompletionState.fromJSON(m.completion),
+      subtasks: (m.subtasks ?? []).map((s) => TaskbookSubtask.fromJSON(s)),
+      signoffPolicy: (m.signoff_policy ?? []).map((p) => SignoffPolicy.fromJSON(p)),
+      signoffsRequireAll: m.signoffs_require_all ?? true,
+      attachments: (m.attachments ?? []).map((a) => Attachment.fromJSON(a)),
+      notes: m.notes ?? null,
+    });
+  }
+
+  /** Serializes to the snake-case wire shape (see `codec.js`). */
+  toJSON() {
+    const out = {
+      id: this.id,
+      order: this.order,
+      type: this.type,
+    };
+    if (this.typeConfig != null) out.type_config = this.typeConfig.toJSON();
+    out.title = this.title;
+    if (this.description != null) out.description = this.description;
+    if (this.dueDate != null) out.due_date = dateToIso(this.dueDate);
+    out.status = this.status;
+    out.progress = this.progress;
+    out.completion = this.completion.toJSON();
+    out.subtasks = this.subtasks.map((s) => s.toJSON());
+    out.signoff_policy = this.signoffPolicy.map((p) => p.toJSON());
+    out.signoffs_require_all = this.signoffsRequireAll;
+    out.attachments = this.attachments.map((a) => a.toJSON());
+    if (this.notes != null) out.notes = this.notes;
+    return out;
+  }
+
   /** Returns the computed status per schemas/taskbook_task.md waterfall. */
   computeStatus() {
     const isEval = this.type === TaskTypes.EVALUATION;
+    const isInspection = this.type === TaskTypes.INSPECTION;
     const result = this.typeConfig?.evaluationConfig?.result ?? null;
     const outcome = result?.outcome ?? null;
-    const hasOutcome =
-      outcome === EvaluationOutcome.PASS || outcome === EvaluationOutcome.FAIL;
+    const hasOutcome = outcome != null;
     const hasEvalResult = isEval && result != null;
+    const inspResult = this.typeConfig?.inspectionConfig?.result ?? null;
+    const hasInspectionResult = isInspection && inspResult != null;
 
     const total = this.subtasks.length;
     const hasSubtasks = total > 0;
@@ -74,31 +132,45 @@ class TaskbookTask {
     const subtasksFinished = hasSubtasks && completedCount === total;
     const subtasksSatisfied = !hasSubtasks || subtasksFinished;
 
-    const hasPolicy = this.signoffPolicyOverride.length > 0;
-    const sOK = signoffsOK(this.signoffPolicyOverride, this.signoffsRequireAll);
+    const hasPolicy = this.signoffPolicy.length > 0;
+    const sOK = signoffsOK(this.signoffPolicy, this.signoffsRequireAll);
     const signoffInProgress =
-      hasPolicy && !sOK && this.signoffPolicyOverride.some((p) => p.completed);
+      hasPolicy && !sOK && this.signoffPolicy.some((p) => p.completed);
     const signoffsSatisfied = !hasPolicy || sOK;
 
     const workExists = hasSubtasks || hasPolicy;
-    const isComplete = isEval ? hasOutcome : this.completion.complete;
+
+    // Effective "complete" input: evaluation → outcome recorded;
+    // inspection → observation recorded; other types → the owner marker.
+    const isComplete = isEval
+      ? hasOutcome
+      : isInspection
+        ? hasInspectionResult
+        : this.completion.complete;
     const isPassingCompletion = isEval
       ? outcome === EvaluationOutcome.PASS
-      : true;
+      : isInspection
+        ? hasInspectionResult && !inspResult.isFailing
+        : true;
 
+    // 1. Complete / complete_failed
     if (isComplete && sOK) {
       return isPassingCompletion
         ? WorkItemStatus.COMPLETE
         : WorkItemStatus.COMPLETE_FAILED;
     }
+    // 2. Pending validation
     if (
       (isComplete && !sOK) ||
-      (isEval && this.completion.complete && !hasOutcome)
+      (isEval && this.completion.complete && !hasOutcome) ||
+      (isInspection && this.completion.complete && !hasInspectionResult)
     ) {
       return WorkItemStatus.PENDING_VALIDATION;
     }
+    // 3. Owner action needed (plain tasks only)
     if (
       !isEval &&
+      !isInspection &&
       workExists &&
       subtasksSatisfied &&
       signoffsSatisfied &&
@@ -106,6 +178,7 @@ class TaskbookTask {
     ) {
       return WorkItemStatus.OWNER_ACTION_NEEDED;
     }
+    // 4. In progress
     if (
       completedCount > 0 ||
       signoffInProgress ||
@@ -113,6 +186,7 @@ class TaskbookTask {
     ) {
       return WorkItemStatus.IN_PROGRESS;
     }
+    // 5. Default
     return WorkItemStatus.NOT_STARTED;
   }
 
@@ -133,6 +207,7 @@ class TaskbookTask {
     });
     const newTypeConfig = new TaskTypeConfig({
       evaluationConfig: newEvalConfig,
+      inspectionConfig: this.typeConfig.inspectionConfig,
       taskbookConfig: this.typeConfig.taskbookConfig,
       skillsheetConfig: this.typeConfig.skillsheetConfig,
       certConfig: this.typeConfig.certConfig,
@@ -153,7 +228,7 @@ class TaskbookTask {
       progress: this.progress,
       completion: this.completion,
       subtasks: this.subtasks,
-      signoffPolicyOverride: this.signoffPolicyOverride,
+      signoffPolicy: this.signoffPolicy,
       signoffsRequireAll: this.signoffsRequireAll,
       attachments: this.attachments,
       notes: this.notes,

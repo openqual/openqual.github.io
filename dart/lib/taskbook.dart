@@ -15,6 +15,7 @@
 import 'dart:convert';
 import 'dart:math';
 
+import 'codec.dart';
 import 'completion_state.dart';
 import 'constants.dart';
 import 'enums.dart';
@@ -28,6 +29,7 @@ import 'taskbook_section.dart';
 import 'taskbook_subtask.dart';
 import 'taskbook_summary.dart';
 import 'taskbook_task.dart';
+import 'wire.dart';
 
 /// The root container in the TaskBook hierarchy.
 class Taskbook {
@@ -43,7 +45,6 @@ class Taskbook {
   final List<TaskbookSection> sections;
   final List<SignoffPolicy> signoffPolicy;
   final bool signoffsRequireAll;
-  final bool signoffPolicyCascades;
   final List<Attachment> attachments;
   final String? notes;
   final TaskbookEvaluationConfig? evaluationConfig;
@@ -66,7 +67,6 @@ class Taskbook {
     this.sections = const [],
     this.signoffPolicy = const [],
     this.signoffsRequireAll = true,
-    this.signoffPolicyCascades = false,
     this.attachments = const [],
     this.notes,
     this.evaluationConfig,
@@ -76,6 +76,87 @@ class Taskbook {
     this.importNotes,
     this.source,
   });
+
+  /// Reads the wire shape produced by [toMap].
+  factory Taskbook.fromMap(Map<String, dynamic> m) => Taskbook(
+        schemaVersion:
+            (m['schema_version'] as String?) ?? openqualSchemaVersion,
+        taskbookType: m['taskbook_type'] == null
+            ? TaskbookTypes.taskbook
+            : taskbookTypesFromWire(m['taskbook_type'] as String),
+        title: m['title'] as String,
+        description: m['description'] as String?,
+        dueDate: readDateTime(m['due_date']),
+        status: m['status'] == null
+            ? WorkItemStatus.notStarted
+            : workItemStatusFromWire(m['status'] as String),
+        progress: (m['progress'] as num?)?.toDouble() ?? 0.0,
+        completion: m['completion'] == null
+            ? const CompletionState()
+            : CompletionState.fromMap(
+                (m['completion'] as Map).cast<String, dynamic>()),
+        assignment: m['assignment'] == null
+            ? null
+            : TaskbookAssignment.fromMap(
+                (m['assignment'] as Map).cast<String, dynamic>()),
+        sections:
+            readMapList(m['sections']).map(TaskbookSection.fromMap).toList(),
+        signoffPolicy: readMapList(m['signoff_policy'])
+            .map(SignoffPolicy.fromMap)
+            .toList(),
+        signoffsRequireAll: (m['signoffs_require_all'] as bool?) ?? true,
+        attachments:
+            readMapList(m['attachments']).map(Attachment.fromMap).toList(),
+        notes: m['notes'] as String?,
+        evaluationConfig: m['evaluation_config'] == null
+            ? null
+            : TaskbookEvaluationConfig.fromMap(
+                (m['evaluation_config'] as Map).cast<String, dynamic>()),
+        startAndEnd: m['start_and_end'] == null
+            ? null
+            : StartAndEndTimes.fromMap(
+                (m['start_and_end'] as Map).cast<String, dynamic>()),
+        taskbookSummary: m['taskbook_summary'] == null
+            ? null
+            : TaskbookSummary.fromMap(
+                (m['taskbook_summary'] as Map).cast<String, dynamic>()),
+        importStatus: m['import_status'] as String?,
+        importNotes: m['import_notes'] as String?,
+        source: m['source'] == null
+            ? null
+            : Source.fromMap((m['source'] as Map).cast<String, dynamic>()),
+      );
+
+  /// Serializes to the snake-case wire shape with raw [DateTime]
+  /// values (see `codec.dart`). Use [toJson] for portable JSON.
+  Map<String, dynamic> toMap() => {
+        'schema_version': schemaVersion,
+        'taskbook_type': wireValue(taskbookType),
+        'title': title,
+        if (description != null) 'description': description,
+        if (dueDate != null) 'due_date': dueDate,
+        'status': wireValue(status),
+        'progress': progress,
+        'completion': completion.toMap(),
+        if (assignment != null) 'assignment': assignment!.toMap(),
+        'sections': sections.map((s) => s.toMap()).toList(),
+        'signoff_policy': signoffPolicy.map((p) => p.toMap()).toList(),
+        'signoffs_require_all': signoffsRequireAll,
+        'attachments': attachments.map((a) => a.toMap()).toList(),
+        if (notes != null) 'notes': notes,
+        if (evaluationConfig != null)
+          'evaluation_config': evaluationConfig!.toMap(),
+        if (startAndEnd != null) 'start_and_end': startAndEnd!.toMap(),
+        if (taskbookSummary != null)
+          'taskbook_summary': taskbookSummary!.toMap(),
+        if (importStatus != null) 'import_status': importStatus,
+        if (importNotes != null) 'import_notes': importNotes,
+        if (source != null) 'source': source!.toMap(),
+      };
+
+  /// Portable JSON form: [toMap] with every [DateTime] converted to
+  /// ISO-8601 UTC strings.
+  Map<String, dynamic> toJson() => datesToIso(toMap());
 
   /// Factory. Parses a JSON string (typically from an AI import) into a
   /// fully-initialized Taskbook. Returns a safe error Taskbook on parse
@@ -243,12 +324,11 @@ class Taskbook {
     // Book-level threshold (aggregated mode only).
     double? effThresholdPoints;
     double? effThresholdPercentage;
+    // `minPassingPercentage` is validated to [0.0, 1.0] at construction
+    // (MIGRATION Rule 4) — no legacy ÷100 normalization.
     if (isAggregated) {
       final minPts = evaluationConfig?.scoringConfig?.minPassingPoints;
-      var minPct = evaluationConfig?.scoringConfig?.minPassingPercentage;
-      if (minPct != null && minPct > 1.0) {
-        minPct = minPct / 100.0;
-      }
+      final minPct = evaluationConfig?.scoringConfig?.minPassingPercentage;
       if (minPts != null) {
         effThresholdPoints = minPts;
         if (pointsPossible > 0) {
@@ -273,9 +353,16 @@ class Taskbook {
         allScoredEvalsDone &&
         pointsAwarded < effThresholdPoints;
 
+    // Autofail propagation: evaluation autofail + inspection
+    // critical_failure (the inspection counterpart — see
+    // schemas/taskbook.md).
     final hasAutofailFailure = allTasks.any((t) {
       if (t.status != WorkItemStatus.completeFailed) return false;
-      return t.typeConfig?.evaluationConfig?.criteria?.autofail == true;
+      if (t.typeConfig?.evaluationConfig?.criteria?.autofail == true) {
+        return true;
+      }
+      return t.typeConfig?.inspectionConfig?.result?.triage ==
+          InspectionTriage.criticalFailure;
     });
     final hasFailedSection = computedSections
         .any((s) => s.status == WorkItemStatus.completeFailed);
@@ -345,13 +432,13 @@ class Taskbook {
     var signoffsCompletedTotal =
         signoffPolicy.where((p) => p.completed).length;
     for (final s in computedSections) {
-      signoffsRequiredTotal += s.signoffPolicyOverride.length;
+      signoffsRequiredTotal += s.signoffPolicy.length;
       signoffsCompletedTotal +=
-          s.signoffPolicyOverride.where((p) => p.completed).length;
+          s.signoffPolicy.where((p) => p.completed).length;
       for (final t in s.tasks) {
-        signoffsRequiredTotal += t.signoffPolicyOverride.length;
+        signoffsRequiredTotal += t.signoffPolicy.length;
         signoffsCompletedTotal +=
-            t.signoffPolicyOverride.where((p) => p.completed).length;
+            t.signoffPolicy.where((p) => p.completed).length;
       }
     }
 
@@ -419,6 +506,7 @@ class Taskbook {
     TaskbookSummary? taskbookSummary,
   }) {
     return Taskbook(
+      schemaVersion: schemaVersion,
       taskbookType: taskbookType,
       title: title,
       description: description,
@@ -430,7 +518,6 @@ class Taskbook {
       sections: sections ?? this.sections,
       signoffPolicy: signoffPolicy,
       signoffsRequireAll: signoffsRequireAll,
-      signoffPolicyCascades: signoffPolicyCascades,
       attachments: attachments,
       notes: notes,
       evaluationConfig: evaluationConfig,
@@ -438,6 +525,7 @@ class Taskbook {
       taskbookSummary: taskbookSummary ?? this.taskbookSummary,
       importStatus: importStatus,
       importNotes: importNotes,
+      source: source,
     );
   }
 }

@@ -12,8 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import 'completion_state.dart';
 import 'attachment.dart';
+import 'codec.dart';
+import 'completion_state.dart';
 
 /// A single checklist item under a TaskbookTask.
 class TaskbookSubtask {
@@ -30,6 +31,28 @@ class TaskbookSubtask {
     this.completion = const CompletionState(),
     this.attachments = const [],
   });
+
+  /// Reads the wire shape produced by [toMap].
+  factory TaskbookSubtask.fromMap(Map<String, dynamic> m) => TaskbookSubtask(
+        id: m['id'] as String,
+        order: (m['order'] as num).toInt(),
+        title: m['title'] as String,
+        completion: m['completion'] == null
+            ? const CompletionState()
+            : CompletionState.fromMap(
+                (m['completion'] as Map).cast<String, dynamic>()),
+        attachments:
+            readMapList(m['attachments']).map(Attachment.fromMap).toList(),
+      );
+
+  /// Serializes to the snake-case wire shape (see `codec.dart`).
+  Map<String, dynamic> toMap() => {
+        'id': id,
+        'order': order,
+        'title': title,
+        'completion': completion.toMap(),
+        'attachments': attachments.map((a) => a.toMap()).toList(),
+      };
 
   TaskbookSubtask copyWith({CompletionState? completion}) {
     return TaskbookSubtask(

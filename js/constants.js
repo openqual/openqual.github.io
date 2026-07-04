@@ -31,6 +31,6 @@ const neverExpireDate = new Date(Date.UTC(2199, 11, 31));
  * value in their schema_version field. See schemas/constants.md and
  * schemas/README.md → "Schema versioning" for the versioning contract.
  */
-const openqualSchemaVersion = '0.1.0';
+const openqualSchemaVersion = '1.0.0';
 
 module.exports = { neverExpireDate, openqualSchemaVersion };

@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import 'codec.dart';
+
 class RenewalRequirementProgress {
   final String requirementId;
   final int order;
@@ -34,6 +36,36 @@ class RenewalRequirementProgress {
     this.appliedTrainingIds = const [],
     this.manuallyAddedCredit = 0.0,
   });
+
+  /// Reads the wire shape produced by [toMap].
+  factory RenewalRequirementProgress.fromMap(Map<String, dynamic> m) =>
+      RenewalRequirementProgress(
+        requirementId: m['requirement_id'] as String,
+        order: (m['order'] as num).toInt(),
+        requirementDisplayName: m['requirement_display_name'] as String,
+        requirementUnits: m['requirement_units'] as String,
+        requirementQuantity: (m['requirement_quantity'] as num).toDouble(),
+        requirementQuantityCompleted:
+            (m['requirement_quantity_completed'] as num?)?.toDouble() ?? 0.0,
+        effectiveQuantityCompleted:
+            (m['effective_quantity_completed'] as num?)?.toDouble() ?? 0.0,
+        appliedTrainingIds: readStringList(m['applied_training_ids']),
+        manuallyAddedCredit:
+            (m['manually_added_credit'] as num?)?.toDouble() ?? 0.0,
+      );
+
+  /// Serializes to the snake-case wire shape (see `codec.dart`).
+  Map<String, dynamic> toMap() => {
+        'requirement_id': requirementId,
+        'order': order,
+        'requirement_display_name': requirementDisplayName,
+        'requirement_units': requirementUnits,
+        'requirement_quantity': requirementQuantity,
+        'requirement_quantity_completed': requirementQuantityCompleted,
+        'effective_quantity_completed': effectiveQuantityCompleted,
+        'applied_training_ids': appliedTrainingIds,
+        'manually_added_credit': manuallyAddedCredit,
+      };
 
   RenewalRequirementProgress copyWith({
     double? requirementQuantityCompleted,

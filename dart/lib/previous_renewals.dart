@@ -12,10 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import 'codec.dart';
 import 'previous_renewal.dart';
 
 class PreviousRenewals {
   final List<PreviousRenewal> previousRenewals;
 
   const PreviousRenewals({this.previousRenewals = const []});
+
+  /// Reads the wire shape produced by [toMap].
+  factory PreviousRenewals.fromMap(Map<String, dynamic> m) =>
+      PreviousRenewals(
+        previousRenewals: readMapList(m['previous_renewals'])
+            .map(PreviousRenewal.fromMap)
+            .toList(),
+      );
+
+  /// Serializes to the snake-case wire shape (see `codec.dart`).
+  Map<String, dynamic> toMap() => {
+        'previous_renewals':
+            previousRenewals.map((r) => r.toMap()).toList(),
+      };
 }

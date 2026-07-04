@@ -12,8 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import 'codec.dart';
 import 'enums.dart';
 import 'person_snapshot.dart';
+import 'wire.dart';
 
 /// Authoritative portable record of a completed signoff.
 ///
@@ -31,4 +33,23 @@ class SignoffRecord {
     required this.signedAt,
     required this.policyType,
   });
+
+  /// Reads the wire shape produced by [toMap].
+  factory SignoffRecord.fromMap(Map<String, dynamic> m) => SignoffRecord(
+        signatory: PersonSnapshot.fromMap(
+            (m['signatory'] as Map).cast<String, dynamic>()),
+        signatoryRole: m['signatory_role'] == null
+            ? null
+            : orgRolesFromWire(m['signatory_role'] as String),
+        signedAt: readDateTime(m['signed_at'])!,
+        policyType: signoffPolicyTypeFromWire(m['policy_type'] as String),
+      );
+
+  /// Serializes to the snake-case wire shape (see `codec.dart`).
+  Map<String, dynamic> toMap() => {
+        'signatory': signatory.toMap(),
+        if (signatoryRole != null) 'signatory_role': wireValue(signatoryRole!),
+        'signed_at': signedAt,
+        'policy_type': wireValue(policyType),
+      };
 }

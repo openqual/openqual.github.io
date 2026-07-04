@@ -20,6 +20,22 @@ class ValidityPeriod {
     this.units = units;
     Object.freeze(this);
   }
+
+  /** Reads the wire shape produced by toJSON(). */
+  static fromJSON(m) {
+    return new ValidityPeriod({
+      duration: m.duration,
+      units: m.units,
+    });
+  }
+
+  /** Serializes to the snake-case wire shape (see `codec.js`). */
+  toJSON() {
+    return {
+      duration: this.duration,
+      units: this.units,
+    };
+  }
 }
 
 module.exports = { ValidityPeriod };

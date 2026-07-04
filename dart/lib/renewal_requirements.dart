@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import 'codec.dart';
 import 'renewal_component.dart';
 
 class RenewalRequirements {
@@ -22,4 +23,19 @@ class RenewalRequirements {
     required this.requirementsVersion,
     this.components = const [],
   });
+
+  /// Reads the wire shape produced by [toMap].
+  factory RenewalRequirements.fromMap(Map<String, dynamic> m) =>
+      RenewalRequirements(
+        requirementsVersion: m['requirements_version'] as String,
+        components: readMapList(m['components'])
+            .map(RenewalComponent.fromMap)
+            .toList(),
+      );
+
+  /// Serializes to the snake-case wire shape (see `codec.dart`).
+  Map<String, dynamic> toMap() => {
+        'requirements_version': requirementsVersion,
+        'components': components.map((c) => c.toMap()).toList(),
+      };
 }

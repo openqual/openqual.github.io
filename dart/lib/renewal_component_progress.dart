@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import 'codec.dart';
 import 'renewal_requirement_progress.dart';
 
 class RenewalComponentProgress {
@@ -38,6 +39,40 @@ class RenewalComponentProgress {
     this.appliedTrainingIds = const [],
     this.manuallyAddedCredit = 0.0,
   });
+
+  /// Reads the wire shape produced by [toMap].
+  factory RenewalComponentProgress.fromMap(Map<String, dynamic> m) =>
+      RenewalComponentProgress(
+        componentId: m['component_id'] as String,
+        order: (m['order'] as num).toInt(),
+        componentName: m['component_name'] as String,
+        componentUnits: m['component_units'] as String,
+        componentQuantity: (m['component_quantity'] as num).toDouble(),
+        componentQuantityCompleted:
+            (m['component_quantity_completed'] as num?)?.toDouble() ?? 0.0,
+        effectiveQuantityCompleted:
+            (m['effective_quantity_completed'] as num?)?.toDouble() ?? 0.0,
+        requirements: readMapList(m['requirements'])
+            .map(RenewalRequirementProgress.fromMap)
+            .toList(),
+        appliedTrainingIds: readStringList(m['applied_training_ids']),
+        manuallyAddedCredit:
+            (m['manually_added_credit'] as num?)?.toDouble() ?? 0.0,
+      );
+
+  /// Serializes to the snake-case wire shape (see `codec.dart`).
+  Map<String, dynamic> toMap() => {
+        'component_id': componentId,
+        'order': order,
+        'component_name': componentName,
+        'component_units': componentUnits,
+        'component_quantity': componentQuantity,
+        'component_quantity_completed': componentQuantityCompleted,
+        'effective_quantity_completed': effectiveQuantityCompleted,
+        'requirements': requirements.map((r) => r.toMap()).toList(),
+        'applied_training_ids': appliedTrainingIds,
+        'manually_added_credit': manuallyAddedCredit,
+      };
 
   RenewalComponentProgress copyWith({
     double? componentQuantityCompleted,

@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import 'codec.dart';
+
 /// Unified completion marker used at every level of the TaskBook hierarchy
 /// (taskbook, section, task, subtask).
 ///
@@ -24,6 +26,18 @@ class CompletionState {
     this.complete = false,
     this.completedAt,
   });
+
+  /// Reads the wire shape produced by [toMap].
+  factory CompletionState.fromMap(Map<String, dynamic> m) => CompletionState(
+        complete: (m['complete'] as bool?) ?? false,
+        completedAt: readDateTime(m['completed_at']),
+      );
+
+  /// Serializes to the snake-case wire shape (see `codec.dart`).
+  Map<String, dynamic> toMap() => {
+        'complete': complete,
+        if (completedAt != null) 'completed_at': completedAt,
+      };
 
   /// Returns a new [CompletionState] with [complete] set to `true` and
   /// [completedAt] stamped to [now].

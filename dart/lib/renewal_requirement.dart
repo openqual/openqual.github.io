@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import 'codec.dart';
 import 'enums.dart';
+import 'wire.dart';
 
 class RenewalRequirement {
   final String requirementId;
@@ -23,6 +25,12 @@ class RenewalRequirement {
   final double requirementQuantity;
   final RequirementUnits requirementUnits;
 
+  /// Subject-matter topics training must cover to count toward this
+  /// requirement, as authority-namespaced strings (see "Topic strings"
+  /// in schemas/renewal_component.md). Empty means any topic in the
+  /// discipline counts.
+  final List<String> topics;
+
   const RenewalRequirement({
     required this.requirementId,
     required this.order,
@@ -31,7 +39,37 @@ class RenewalRequirement {
     this.requirementDescription,
     required this.requirementQuantity,
     this.requirementUnits = RequirementUnits.hours,
+    this.topics = const [],
   });
+
+  /// Reads the wire shape produced by [toMap].
+  factory RenewalRequirement.fromMap(Map<String, dynamic> m) =>
+      RenewalRequirement(
+        requirementId: m['requirement_id'] as String,
+        order: (m['order'] as num).toInt(),
+        requirementName: m['requirement_name'] as String,
+        requirementDisplayName: m['requirement_display_name'] as String?,
+        requirementDescription: m['requirement_description'] as String?,
+        requirementQuantity: (m['requirement_quantity'] as num).toDouble(),
+        requirementUnits: m['requirement_units'] == null
+            ? RequirementUnits.hours
+            : requirementUnitsFromWire(m['requirement_units'] as String),
+        topics: readStringList(m['topics']),
+      );
+
+  /// Serializes to the snake-case wire shape (see `codec.dart`).
+  Map<String, dynamic> toMap() => {
+        'requirement_id': requirementId,
+        'order': order,
+        'requirement_name': requirementName,
+        if (requirementDisplayName != null)
+          'requirement_display_name': requirementDisplayName,
+        if (requirementDescription != null)
+          'requirement_description': requirementDescription,
+        'requirement_quantity': requirementQuantity,
+        'requirement_units': wireValue(requirementUnits),
+        'topics': topics,
+      };
 
   String get effectiveDisplayName =>
       requirementDisplayName ?? requirementName;

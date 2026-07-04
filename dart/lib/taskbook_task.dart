@@ -12,12 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import 'attachment.dart';
+import 'codec.dart';
 import 'completion_state.dart';
 import 'enums.dart';
 import 'signoff_policy.dart';
 import 'task_type_config.dart';
-import 'attachment.dart';
 import 'taskbook_subtask.dart';
+import 'wire.dart';
 
 /// A leaf work unit within a TaskbookSection. Polymorphic via [type] and
 /// [typeConfig].
@@ -33,7 +35,12 @@ class TaskbookTask {
   final double progress;
   final CompletionState completion;
   final List<TaskbookSubtask> subtasks;
-  final List<SignoffPolicy> signoffPolicyOverride;
+
+  /// This tier's signoff policies. Authoritative for this tier; no
+  /// runtime inheritance from the section or book (named
+  /// `signoff_policy_override` in v0.1 — see MIGRATION Rule 1).
+  final List<SignoffPolicy> signoffPolicy;
+
   final bool signoffsRequireAll;
   final List<Attachment> attachments;
   final String? notes;
@@ -50,20 +57,75 @@ class TaskbookTask {
     this.progress = 0.0,
     this.completion = const CompletionState(),
     this.subtasks = const [],
-    this.signoffPolicyOverride = const [],
+    this.signoffPolicy = const [],
     this.signoffsRequireAll = true,
     this.attachments = const [],
     this.notes,
   });
 
+  /// Reads the wire shape produced by [toMap].
+  factory TaskbookTask.fromMap(Map<String, dynamic> m) => TaskbookTask(
+        id: m['id'] as String,
+        order: (m['order'] as num).toInt(),
+        type: m['type'] == null
+            ? TaskTypes.task
+            : taskTypesFromWire(m['type'] as String),
+        typeConfig: m['type_config'] == null
+            ? null
+            : TaskTypeConfig.fromMap(
+                (m['type_config'] as Map).cast<String, dynamic>()),
+        title: m['title'] as String,
+        description: m['description'] as String?,
+        dueDate: readDateTime(m['due_date']),
+        status: m['status'] == null
+            ? WorkItemStatus.notStarted
+            : workItemStatusFromWire(m['status'] as String),
+        progress: (m['progress'] as num?)?.toDouble() ?? 0.0,
+        completion: m['completion'] == null
+            ? const CompletionState()
+            : CompletionState.fromMap(
+                (m['completion'] as Map).cast<String, dynamic>()),
+        subtasks:
+            readMapList(m['subtasks']).map(TaskbookSubtask.fromMap).toList(),
+        signoffPolicy: readMapList(m['signoff_policy'])
+            .map(SignoffPolicy.fromMap)
+            .toList(),
+        signoffsRequireAll: (m['signoffs_require_all'] as bool?) ?? true,
+        attachments:
+            readMapList(m['attachments']).map(Attachment.fromMap).toList(),
+        notes: m['notes'] as String?,
+      );
+
+  /// Serializes to the snake-case wire shape (see `codec.dart`).
+  Map<String, dynamic> toMap() => {
+        'id': id,
+        'order': order,
+        'type': wireValue(type),
+        if (typeConfig != null) 'type_config': typeConfig!.toMap(),
+        'title': title,
+        if (description != null) 'description': description,
+        if (dueDate != null) 'due_date': dueDate,
+        'status': wireValue(status),
+        'progress': progress,
+        'completion': completion.toMap(),
+        'subtasks': subtasks.map((s) => s.toMap()).toList(),
+        'signoff_policy': signoffPolicy.map((p) => p.toMap()).toList(),
+        'signoffs_require_all': signoffsRequireAll,
+        'attachments': attachments.map((a) => a.toMap()).toList(),
+        if (notes != null) 'notes': notes,
+      };
+
   /// Pure. Computes the task's status given its current fields.
   /// See schemas/taskbook_task.md for the full waterfall.
   WorkItemStatus computeStatus() {
     final isEval = type == TaskTypes.evaluation;
+    final isInspection = type == TaskTypes.inspection;
     final result = typeConfig?.evaluationConfig?.result;
     final outcome = result?.outcome;
     final hasOutcome = outcome != null;
     final hasEvalResult = isEval && result != null;
+    final inspResult = typeConfig?.inspectionConfig?.result;
+    final hasInspectionResult = isInspection && inspResult != null;
 
     final total = subtasks.length;
     final hasSubtasks = total > 0;
@@ -71,18 +133,27 @@ class TaskbookTask {
     final subtasksFinished = hasSubtasks && completedCount == total;
     final subtasksSatisfied = !hasSubtasks || subtasksFinished;
 
-    final hasPolicy = signoffPolicyOverride.isNotEmpty;
-    final signoffOK = signoffsOK(signoffPolicyOverride, signoffsRequireAll);
+    final hasPolicy = signoffPolicy.isNotEmpty;
+    final signoffOK = signoffsOK(signoffPolicy, signoffsRequireAll);
     final signoffInProgress = hasPolicy &&
         !signoffOK &&
-        signoffPolicyOverride.any((p) => p.completed);
+        signoffPolicy.any((p) => p.completed);
     final signoffsSatisfied = !hasPolicy || signoffOK;
 
     final workExists = hasSubtasks || hasPolicy;
 
-    final isComplete = isEval ? hasOutcome : completion.complete;
-    final isPassingCompletion =
-        isEval ? outcome == EvaluationOutcome.pass : true;
+    // Effective "complete" input: evaluation → outcome recorded;
+    // inspection → observation recorded; other types → the owner marker.
+    final isComplete = isEval
+        ? hasOutcome
+        : isInspection
+            ? hasInspectionResult
+            : completion.complete;
+    final isPassingCompletion = isEval
+        ? outcome == EvaluationOutcome.pass
+        : isInspection
+            ? (hasInspectionResult && !inspResult.isFailing)
+            : true;
 
     // 1. Complete / complete_failed
     if (isComplete && signoffOK) {
@@ -92,11 +163,13 @@ class TaskbookTask {
     }
     // 2. Pending validation
     if ((isComplete && !signoffOK) ||
-        (isEval && completion.complete && !hasOutcome)) {
+        (isEval && completion.complete && !hasOutcome) ||
+        (isInspection && completion.complete && !hasInspectionResult)) {
       return WorkItemStatus.pendingValidation;
     }
-    // 3. Owner action needed (non-eval only)
+    // 3. Owner action needed (plain tasks only)
     if (!isEval &&
+        !isInspection &&
         workExists &&
         subtasksSatisfied &&
         signoffsSatisfied &&
@@ -164,7 +237,7 @@ class TaskbookTask {
       progress: progress ?? this.progress,
       completion: completion ?? this.completion,
       subtasks: subtasks ?? this.subtasks,
-      signoffPolicyOverride: signoffPolicyOverride,
+      signoffPolicy: signoffPolicy,
       signoffsRequireAll: signoffsRequireAll,
       attachments: attachments,
       notes: notes,
@@ -176,6 +249,7 @@ extension on TaskTypeConfig {
   TaskTypeConfig copyWith({TaskTypeEvaluationConfig? evaluationConfig}) {
     return TaskTypeConfig(
       evaluationConfig: evaluationConfig ?? this.evaluationConfig,
+      inspectionConfig: inspectionConfig,
       taskbookConfig: taskbookConfig,
       skillsheetConfig: skillsheetConfig,
       certConfig: certConfig,

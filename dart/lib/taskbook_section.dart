@@ -12,20 +12,42 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import 'dart:math' as math;
-
+import 'attachment.dart';
+import 'codec.dart';
 import 'completion_state.dart';
 import 'enums.dart';
 import 'signoff_policy.dart';
-import 'attachment.dart';
 import 'taskbook_task.dart';
+import 'wire.dart';
 
 /// Section-level scoring threshold.
+///
+/// `minPassingPercentage` must be in `[0.0, 1.0]` (a fraction, not a
+/// percent value) — see MIGRATION Rule 4.
 class SectionScoringConfig {
   final double? minPassingPoints;
   final double? minPassingPercentage;
 
-  const SectionScoringConfig({this.minPassingPoints, this.minPassingPercentage});
+  const SectionScoringConfig({this.minPassingPoints, this.minPassingPercentage})
+      : assert(
+            minPassingPercentage == null ||
+                (minPassingPercentage >= 0.0 && minPassingPercentage <= 1.0),
+            'minPassingPercentage must be in [0.0, 1.0]');
+
+  /// Reads the wire shape produced by [toMap].
+  factory SectionScoringConfig.fromMap(Map<String, dynamic> m) =>
+      SectionScoringConfig(
+        minPassingPoints: (m['min_passing_points'] as num?)?.toDouble(),
+        minPassingPercentage:
+            (m['min_passing_percentage'] as num?)?.toDouble(),
+      );
+
+  /// Serializes to the snake-case wire shape (see `codec.dart`).
+  Map<String, dynamic> toMap() => {
+        if (minPassingPoints != null) 'min_passing_points': minPassingPoints,
+        if (minPassingPercentage != null)
+          'min_passing_percentage': minPassingPercentage,
+      };
 }
 
 /// Denormalized scoring totals for a section.
@@ -43,6 +65,29 @@ class SectionScoringSummary {
     this.effectiveThresholdPoints,
     this.effectiveThresholdPercentage,
   });
+
+  /// Reads the wire shape produced by [toMap].
+  factory SectionScoringSummary.fromMap(Map<String, dynamic> m) =>
+      SectionScoringSummary(
+        pointsPossible: (m['points_possible'] as num?)?.toDouble() ?? 0.0,
+        pointsAwarded: (m['points_awarded'] as num?)?.toDouble() ?? 0.0,
+        pointsRemaining: (m['points_remaining'] as num?)?.toDouble() ?? 0.0,
+        effectiveThresholdPoints:
+            (m['effective_threshold_points'] as num?)?.toDouble(),
+        effectiveThresholdPercentage:
+            (m['effective_threshold_percentage'] as num?)?.toDouble(),
+      );
+
+  /// Serializes to the snake-case wire shape (see `codec.dart`).
+  Map<String, dynamic> toMap() => {
+        'points_possible': pointsPossible,
+        'points_awarded': pointsAwarded,
+        'points_remaining': pointsRemaining,
+        if (effectiveThresholdPoints != null)
+          'effective_threshold_points': effectiveThresholdPoints,
+        if (effectiveThresholdPercentage != null)
+          'effective_threshold_percentage': effectiveThresholdPercentage,
+      };
 }
 
 /// An ordered group of tasks within a Taskbook.
@@ -56,9 +101,13 @@ class TaskbookSection {
   final double progress;
   final CompletionState completion;
   final List<TaskbookTask> tasks;
-  final List<SignoffPolicy> signoffPolicyOverride;
+
+  /// This tier's signoff policies. Authoritative for this tier; no
+  /// runtime inheritance from the book (named `signoff_policy_override`
+  /// in v0.1 — see MIGRATION Rule 1).
+  final List<SignoffPolicy> signoffPolicy;
+
   final bool signoffsRequireAll;
-  final bool signoffPolicyCascades;
   final SectionScoringConfig? scoringConfig;
   final SectionScoringSummary? scoringSummary;
   final List<Attachment> attachments;
@@ -74,14 +123,66 @@ class TaskbookSection {
     this.progress = 0.0,
     this.completion = const CompletionState(),
     this.tasks = const [],
-    this.signoffPolicyOverride = const [],
+    this.signoffPolicy = const [],
     this.signoffsRequireAll = true,
-    this.signoffPolicyCascades = false,
     this.scoringConfig,
     this.scoringSummary,
     this.attachments = const [],
     this.notes,
   });
+
+  /// Reads the wire shape produced by [toMap].
+  factory TaskbookSection.fromMap(Map<String, dynamic> m) => TaskbookSection(
+        id: m['id'] as String,
+        order: (m['order'] as num).toInt(),
+        title: m['title'] as String,
+        description: m['description'] as String?,
+        dueDate: readDateTime(m['due_date']),
+        status: m['status'] == null
+            ? WorkItemStatus.notStarted
+            : workItemStatusFromWire(m['status'] as String),
+        progress: (m['progress'] as num?)?.toDouble() ?? 0.0,
+        completion: m['completion'] == null
+            ? const CompletionState()
+            : CompletionState.fromMap(
+                (m['completion'] as Map).cast<String, dynamic>()),
+        tasks: readMapList(m['tasks']).map(TaskbookTask.fromMap).toList(),
+        signoffPolicy: readMapList(m['signoff_policy'])
+            .map(SignoffPolicy.fromMap)
+            .toList(),
+        signoffsRequireAll: (m['signoffs_require_all'] as bool?) ?? true,
+        scoringConfig: m['scoring_config'] == null
+            ? null
+            : SectionScoringConfig.fromMap(
+                (m['scoring_config'] as Map).cast<String, dynamic>()),
+        scoringSummary: m['scoring_summary'] == null
+            ? null
+            : SectionScoringSummary.fromMap(
+                (m['scoring_summary'] as Map).cast<String, dynamic>()),
+        attachments:
+            readMapList(m['attachments']).map(Attachment.fromMap).toList(),
+        notes: m['notes'] as String?,
+      );
+
+  /// Serializes to the snake-case wire shape (see `codec.dart`).
+  Map<String, dynamic> toMap() => {
+        'id': id,
+        'order': order,
+        'title': title,
+        if (description != null) 'description': description,
+        if (dueDate != null) 'due_date': dueDate,
+        'status': wireValue(status),
+        'progress': progress,
+        'completion': completion.toMap(),
+        'tasks': tasks.map((t) => t.toMap()).toList(),
+        'signoff_policy': signoffPolicy.map((p) => p.toMap()).toList(),
+        'signoffs_require_all': signoffsRequireAll,
+        if (scoringConfig != null) 'scoring_config': scoringConfig!.toMap(),
+        if (scoringSummary != null)
+          'scoring_summary': scoringSummary!.toMap(),
+        'attachments': attachments.map((a) => a.toMap()).toList(),
+        if (notes != null) 'notes': notes,
+      };
 
   /// Pure. Computes the section's status + scoring summary and returns an
   /// updated section.
@@ -126,15 +227,12 @@ class TaskbookSection {
     final maxPossibleScore = pointsAwarded + pointsRemaining;
     final allScoredEvalsDone = scoredTasks.isNotEmpty && pointsRemaining == 0.0;
 
-    // Thresholds.
+    // Thresholds. `minPassingPercentage` is validated to [0.0, 1.0] at
+    // construction (MIGRATION Rule 4) — no legacy ÷100 normalization.
     double? effThresholdPoints;
     double? effThresholdPercentage;
     final minPts = scoringConfig?.minPassingPoints;
-    var minPct = scoringConfig?.minPassingPercentage;
-    if (minPct != null && minPct > 1.0) {
-      // Guard: user typed 70 instead of 0.70.
-      minPct = minPct / 100.0;
-    }
+    final minPct = scoringConfig?.minPassingPercentage;
     if (minPts != null) {
       effThresholdPoints = minPts;
       if (pointsPossible > 0) effThresholdPercentage = minPts / pointsPossible;
@@ -173,18 +271,25 @@ class TaskbookSection {
     final allTasksDone = total == 0 || doneCount == total;
 
     // Signoffs.
-    final hasPolicy = signoffPolicyOverride.isNotEmpty;
-    final signoffOK = signoffsOK(signoffPolicyOverride, signoffsRequireAll);
+    final hasPolicy = signoffPolicy.isNotEmpty;
+    final signoffOK = signoffsOK(signoffPolicy, signoffsRequireAll);
     final signoffInProgress = hasPolicy &&
         !signoffOK &&
-        signoffPolicyOverride.any((p) => p.completed);
+        signoffPolicy.any((p) => p.completed);
 
     final workExists = total > 0 || hasPolicy;
     final isComplete = completion.complete;
 
+    // Autofail propagation: evaluation autofail + inspection
+    // critical_failure (the inspection counterpart — see
+    // schemas/taskbook_section.md).
     final hasAutofailFailure = computedTasks.any((t) {
       if (t.status != WorkItemStatus.completeFailed) return false;
-      return t.typeConfig?.evaluationConfig?.criteria?.autofail == true;
+      if (t.typeConfig?.evaluationConfig?.criteria?.autofail == true) {
+        return true;
+      }
+      return t.typeConfig?.inspectionConfig?.result?.triage ==
+          InspectionTriage.criticalFailure;
     });
 
     // Priority waterfall.
@@ -262,9 +367,8 @@ class TaskbookSection {
       progress: progress ?? this.progress,
       completion: completion ?? this.completion,
       tasks: tasks ?? this.tasks,
-      signoffPolicyOverride: signoffPolicyOverride,
+      signoffPolicy: signoffPolicy,
       signoffsRequireAll: signoffsRequireAll,
-      signoffPolicyCascades: signoffPolicyCascades,
       scoringConfig: scoringConfig,
       scoringSummary: scoringSummary ?? this.scoringSummary,
       attachments: attachments,
@@ -272,7 +376,3 @@ class TaskbookSection {
     );
   }
 }
-
-// Keep math import used to silence unused warning across compilers.
-// ignore: unused_element
-void _keepMathImport() => math.max<int>(0, 0);

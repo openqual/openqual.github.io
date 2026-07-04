@@ -14,10 +14,18 @@
 
 'use strict';
 
+const { readDate, dateToIso } = require('./codec');
 const { SignoffPolicyType } = require('./enums');
 const { OrganizationSnapshot } = require('./organization_snapshot');
 const { PersonSnapshot } = require('./person_snapshot');
+const { SignoffRecord } = require('./signoff_record');
 
+/**
+ * Defines who may sign off on a taskbook, section, or task. A tier's
+ * `signoff_policy` list is authoritative for that tier; there is no
+ * runtime inheritance from the parent (the field was named
+ * `signoff_policy_override` in v0.1 — see MIGRATION Rule 1).
+ */
 class SignoffPolicy {
   constructor({
     id,
@@ -40,10 +48,46 @@ class SignoffPolicy {
     Object.freeze(this);
   }
 
+  /** Reads the wire shape produced by toJSON(). */
+  static fromJSON(m) {
+    return new SignoffPolicy({
+      id: m.id,
+      type: m.type,
+      allowedUsers: m.allowed_users ?? [],
+      allowedOrgs: (m.allowed_orgs ?? []).map((o) =>
+        OrganizationSnapshot.fromJSON(o),
+      ),
+      allowedRoles: m.allowed_roles ?? [],
+      completed: m.completed ?? false,
+      completionTimestamp: readDate(m.completion_timestamp),
+      signoffRecord:
+        m.signoff_record == null ? null : SignoffRecord.fromJSON(m.signoff_record),
+    });
+  }
+
+  /** Serializes to the snake-case wire shape (see `codec.js`). */
+  toJSON() {
+    const out = {
+      id: this.id,
+      type: this.type,
+    };
+    if (this.allowedUsers.length > 0) out.allowed_users = [...this.allowedUsers];
+    if (this.allowedOrgs.length > 0) {
+      out.allowed_orgs = this.allowedOrgs.map((o) => o.toJSON());
+    }
+    if (this.allowedRoles.length > 0) out.allowed_roles = [...this.allowedRoles];
+    out.completed = this.completed;
+    if (this.completionTimestamp != null) {
+      out.completion_timestamp = dateToIso(this.completionTimestamp);
+    }
+    if (this.signoffRecord != null) out.signoff_record = this.signoffRecord.toJSON();
+    return out;
+  }
+
   /**
    * @param {string} userId
    * @param {string} taskbookOwnerId
-   * @param {Object<string, Array<'admin'|'officer'|'member'>>} orgMemberships
+   * @param {Object<string, OrgRoles[]>} orgMemberships
    *   Map from organization canonical ID (matching
    *   OrganizationSnapshot.source.canonicalId) to the list of OrgRoles
    *   values the user holds in that org. Un-sourced snapshots in

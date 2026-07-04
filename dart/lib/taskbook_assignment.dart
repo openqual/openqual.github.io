@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import 'codec.dart';
 import 'organization_snapshot.dart';
 import 'person_snapshot.dart';
 
@@ -23,6 +24,30 @@ class TaskbookAssignment {
   final AssignedOrganization? host;
 
   const TaskbookAssignment({this.assignee, this.evaluator, this.host});
+
+  /// Reads the wire shape produced by [toMap].
+  factory TaskbookAssignment.fromMap(Map<String, dynamic> m) =>
+      TaskbookAssignment(
+        assignee: m['assignee'] == null
+            ? null
+            : AssignedPerson.fromMap(
+                (m['assignee'] as Map).cast<String, dynamic>()),
+        evaluator: m['evaluator'] == null
+            ? null
+            : AssignedPerson.fromMap(
+                (m['evaluator'] as Map).cast<String, dynamic>()),
+        host: m['host'] == null
+            ? null
+            : AssignedOrganization.fromMap(
+                (m['host'] as Map).cast<String, dynamic>()),
+      );
+
+  /// Serializes to the snake-case wire shape (see `codec.dart`).
+  Map<String, dynamic> toMap() => {
+        if (assignee != null) 'assignee': assignee!.toMap(),
+        if (evaluator != null) 'evaluator': evaluator!.toMap(),
+        if (host != null) 'host': host!.toMap(),
+      };
 }
 
 /// A person captured at the time of assignment, paired with the
@@ -33,6 +58,19 @@ class AssignedPerson {
   final DateTime? assignedAt;
 
   const AssignedPerson({required this.person, this.assignedAt});
+
+  /// Reads the wire shape produced by [toMap].
+  factory AssignedPerson.fromMap(Map<String, dynamic> m) => AssignedPerson(
+        person: PersonSnapshot.fromMap(
+            (m['person'] as Map).cast<String, dynamic>()),
+        assignedAt: readDateTime(m['assigned_at']),
+      );
+
+  /// Serializes to the snake-case wire shape (see `codec.dart`).
+  Map<String, dynamic> toMap() => {
+        'person': person.toMap(),
+        if (assignedAt != null) 'assigned_at': assignedAt,
+      };
 }
 
 /// An organization captured at the time of assignment, paired with
@@ -43,4 +81,18 @@ class AssignedOrganization {
   final DateTime? assignedAt;
 
   const AssignedOrganization({required this.organization, this.assignedAt});
+
+  /// Reads the wire shape produced by [toMap].
+  factory AssignedOrganization.fromMap(Map<String, dynamic> m) =>
+      AssignedOrganization(
+        organization: OrganizationSnapshot.fromMap(
+            (m['organization'] as Map).cast<String, dynamic>()),
+        assignedAt: readDateTime(m['assigned_at']),
+      );
+
+  /// Serializes to the snake-case wire shape (see `codec.dart`).
+  Map<String, dynamic> toMap() => {
+        'organization': organization.toMap(),
+        if (assignedAt != null) 'assigned_at': assignedAt,
+      };
 }

@@ -46,6 +46,7 @@ const SignoffPolicyType = Object.freeze({
 const TaskTypes = Object.freeze({
   TASK: 'task',
   EVALUATION: 'evaluation',
+  INSPECTION: 'inspection',
   TASKBOOK: 'taskbook',
   SKILLSHEET: 'skillsheet',
   CERT: 'cert',
@@ -105,6 +106,7 @@ const Discipline = Object.freeze({
   DISPATCH: 'dispatch',
   EMERGENCY_MANAGEMENT: 'emergency_management',
   SAR: 'sar',
+  AVIATION: 'aviation',
   SKI_PATROL: 'ski_patrol',
   OTHER: 'other',
 });
@@ -142,6 +144,60 @@ const OrgRoles = Object.freeze({
   MEMBER: 'member',
 });
 
+// Shape of an inspection task's observation. Lives on
+// TaskTypeInspectionCriteria.kind.
+const InspectionKind = Object.freeze({
+  PASS_FAIL: 'pass_fail',
+  MEASUREMENT: 'measurement',
+  COUNT: 'count',
+});
+
+// Derived severity of a recorded inspection observation. See
+// schemas/task_type_config.md → "Triage derivation".
+//
+// `critical_failure` propagates `complete_failed` to the parent section
+// and book, like evaluation autofail. `degraded` behaves as a passing
+// completion for status purposes.
+const InspectionTriage = Object.freeze({
+  PASS: 'pass',
+  DEGRADED: 'degraded',
+  FAILING: 'failing',
+  CRITICAL_FAILURE: 'critical_failure',
+});
+
+// Optional recommended follow-up on an inspection result.
+const InspectionAction = Object.freeze({
+  REPLACE: 'replace',
+  REPAIR: 'repair',
+  MONITOR: 'monitor',
+});
+
+// Delivery modality of a training event. Lives on
+// TrainingRecord.trainingType. Distinct from Discipline (the domain)
+// and from topic strings (the subject matter).
+const TrainingType = Object.freeze({
+  LECTURE: 'lecture',
+  SKILLS: 'skills',
+  LECTURE_AND_SKILLS: 'lecture_and_skills',
+  ONLINE_ASYNC: 'online_async',
+  ONLINE_LIVE: 'online_live',
+  CLINICAL: 'clinical',
+  FIELD_EXPERIENCE: 'field_experience',
+  SIMULATION: 'simulation',
+  PHYSICAL_FITNESS: 'physical_fitness',
+  OTHER: 'other',
+});
+
+// Trust classification for a training record's origin. Lives on
+// TrainingRecord.providerType.
+const VerificationProvider = Object.freeze({
+  SELF_REPORTED: 'self_reported',
+  INTERNAL_LMS: 'internal_lms',
+  ACCREDITED_PROVIDER: 'accredited_provider',
+  CAPCE: 'capce',
+  THIRD_PARTY: 'third_party',
+});
+
 module.exports = {
   WorkItemStatus,
   EvaluationOutcome,
@@ -157,4 +213,9 @@ module.exports = {
   CertClassification,
   CertStatus,
   OrgRoles,
+  InspectionKind,
+  InspectionTriage,
+  InspectionAction,
+  TrainingType,
+  VerificationProvider,
 };

@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import 'enums.dart';
+import 'wire.dart';
 
 /// A duration expressed as an integer quantity and a calendar-time unit.
 class ValidityPeriod {
@@ -20,4 +21,16 @@ class ValidityPeriod {
   final TimeUnit units;
 
   const ValidityPeriod({required this.duration, required this.units});
+
+  /// Reads the wire shape produced by [toMap].
+  factory ValidityPeriod.fromMap(Map<String, dynamic> m) => ValidityPeriod(
+        duration: (m['duration'] as num).toInt(),
+        units: timeUnitFromWire(m['units'] as String),
+      );
+
+  /// Serializes to the snake-case wire shape (see `codec.dart`).
+  Map<String, dynamic> toMap() => {
+        'duration': duration,
+        'units': wireValue(units),
+      };
 }

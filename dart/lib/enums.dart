@@ -42,7 +42,7 @@ enum EvaluationOutcome { pass, fail }
 enum SignoffPolicyType { thisUser, specifyUsers, orgMembers }
 
 /// Polymorphic discriminator for [TaskbookTask.type].
-enum TaskTypes { task, evaluation, taskbook, skillsheet, cert }
+enum TaskTypes { task, evaluation, inspection, taskbook, skillsheet, cert }
 
 /// Shape of an evaluation task's pass/fail determination.
 enum EvaluationType { passFail, scored }
@@ -82,6 +82,7 @@ enum Discipline {
   dispatch,
   emergencyManagement,
   sar,
+  aviation,
   skiPatrol,
   other,
 }
@@ -108,3 +109,44 @@ enum CertStatus { active, suspended, revoked, expired }
 /// invitation, pending join request) are outside the scope of the
 /// standard; a user who is not an accepted member holds no role.
 enum OrgRoles { admin, officer, member }
+
+/// Shape of an inspection task's observation. Lives on
+/// `TaskTypeInspectionCriteria.kind`.
+enum InspectionKind { passFail, measurement, count }
+
+/// Derived severity of a recorded inspection observation. See
+/// schemas/task_type_config.md → "Triage derivation".
+///
+/// `criticalFailure` propagates `completeFailed` to the parent section
+/// and book, like evaluation autofail. `degraded` behaves as a passing
+/// completion for status purposes.
+enum InspectionTriage { pass, degraded, failing, criticalFailure }
+
+/// Optional recommended follow-up on an inspection result.
+enum InspectionAction { replace, repair, monitor }
+
+/// Delivery modality of a training event. Lives on
+/// `TrainingRecord.trainingType`. Distinct from [Discipline] (the
+/// domain) and from topic strings (the subject matter).
+enum TrainingType {
+  lecture,
+  skills,
+  lectureAndSkills,
+  onlineAsync,
+  onlineLive,
+  clinical,
+  fieldExperience,
+  simulation,
+  physicalFitness,
+  other,
+}
+
+/// Trust classification for a training record's origin. Lives on
+/// `TrainingRecord.providerType`.
+enum VerificationProvider {
+  selfReported,
+  internalLms,
+  accreditedProvider,
+  capce,
+  thirdParty,
+}

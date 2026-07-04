@@ -14,6 +14,7 @@
 
 'use strict';
 
+const { readDate, dateToIso } = require('./codec');
 const { OrganizationSnapshot } = require('./organization_snapshot');
 const { PersonSnapshot } = require('./person_snapshot');
 
@@ -28,6 +29,21 @@ class AssignedPerson {
     this.assignedAt = assignedAt;
     Object.freeze(this);
   }
+
+  /** Reads the wire shape produced by toJSON(). */
+  static fromJSON(m) {
+    return new AssignedPerson({
+      person: PersonSnapshot.fromJSON(m.person),
+      assignedAt: readDate(m.assigned_at),
+    });
+  }
+
+  /** Serializes to the snake-case wire shape (see `codec.js`). */
+  toJSON() {
+    const out = { person: this.person.toJSON() };
+    if (this.assignedAt != null) out.assigned_at = dateToIso(this.assignedAt);
+    return out;
+  }
 }
 
 /**
@@ -41,6 +57,21 @@ class AssignedOrganization {
     this.assignedAt = assignedAt;
     Object.freeze(this);
   }
+
+  /** Reads the wire shape produced by toJSON(). */
+  static fromJSON(m) {
+    return new AssignedOrganization({
+      organization: OrganizationSnapshot.fromJSON(m.organization),
+      assignedAt: readDate(m.assigned_at),
+    });
+  }
+
+  /** Serializes to the snake-case wire shape (see `codec.js`). */
+  toJSON() {
+    const out = { organization: this.organization.toJSON() };
+    if (this.assignedAt != null) out.assigned_at = dateToIso(this.assignedAt);
+    return out;
+  }
 }
 
 /**
@@ -53,6 +84,24 @@ class TaskbookAssignment {
     this.evaluator = evaluator;
     this.host = host;
     Object.freeze(this);
+  }
+
+  /** Reads the wire shape produced by toJSON(). */
+  static fromJSON(m) {
+    return new TaskbookAssignment({
+      assignee: m.assignee == null ? null : AssignedPerson.fromJSON(m.assignee),
+      evaluator: m.evaluator == null ? null : AssignedPerson.fromJSON(m.evaluator),
+      host: m.host == null ? null : AssignedOrganization.fromJSON(m.host),
+    });
+  }
+
+  /** Serializes to the snake-case wire shape (see `codec.js`). */
+  toJSON() {
+    const out = {};
+    if (this.assignee != null) out.assignee = this.assignee.toJSON();
+    if (this.evaluator != null) out.evaluator = this.evaluator.toJSON();
+    if (this.host != null) out.host = this.host.toJSON();
+    return out;
   }
 }
 

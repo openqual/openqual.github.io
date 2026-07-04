@@ -25,6 +25,7 @@ class RenewalRequirement {
     requirementDescription = null,
     requirementQuantity,
     requirementUnits = RequirementUnits.HOURS,
+    topics = [],
   }) {
     this.requirementId = requirementId;
     this.order = order;
@@ -33,7 +34,45 @@ class RenewalRequirement {
     this.requirementDescription = requirementDescription;
     this.requirementQuantity = requirementQuantity;
     this.requirementUnits = requirementUnits;
+    // Subject-matter topics training must cover to count toward this
+    // requirement, as authority-namespaced strings (see "Topic strings"
+    // in schemas/renewal_component.md). Empty means any topic in the
+    // discipline counts.
+    this.topics = Object.freeze([...topics]);
     Object.freeze(this);
+  }
+
+  /** Reads the wire shape produced by toJSON(). */
+  static fromJSON(m) {
+    return new RenewalRequirement({
+      requirementId: m.requirement_id,
+      order: m.order,
+      requirementName: m.requirement_name,
+      requirementDisplayName: m.requirement_display_name ?? null,
+      requirementDescription: m.requirement_description ?? null,
+      requirementQuantity: m.requirement_quantity,
+      requirementUnits: m.requirement_units ?? RequirementUnits.HOURS,
+      topics: m.topics ?? [],
+    });
+  }
+
+  /** Serializes to the snake-case wire shape (see `codec.js`). */
+  toJSON() {
+    const out = {
+      requirement_id: this.requirementId,
+      order: this.order,
+      requirement_name: this.requirementName,
+    };
+    if (this.requirementDisplayName != null) {
+      out.requirement_display_name = this.requirementDisplayName;
+    }
+    if (this.requirementDescription != null) {
+      out.requirement_description = this.requirementDescription;
+    }
+    out.requirement_quantity = this.requirementQuantity;
+    out.requirement_units = this.requirementUnits;
+    out.topics = [...this.topics];
+    return out;
   }
 
   get effectiveDisplayName() {

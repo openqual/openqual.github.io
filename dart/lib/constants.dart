@@ -25,4 +25,4 @@ final DateTime neverExpireDate = DateTime.utc(2199, 12, 31);
 /// Top-level portable records (Certification, Taskbook) serialize this
 /// value in their `schema_version` field. See schemas/constants.md and
 /// schemas/README.md → "Schema versioning" for the versioning contract.
-const String openqualSchemaVersion = '0.1.0';
+const String openqualSchemaVersion = '1.0.0';

@@ -14,11 +14,29 @@
 
 'use strict';
 
+const { RenewalComponent } = require('./renewal_component');
+
 class RenewalRequirements {
   constructor({ requirementsVersion, components = [] }) {
     this.requirementsVersion = requirementsVersion;
     this.components = Object.freeze([...components]);
     Object.freeze(this);
+  }
+
+  /** Reads the wire shape produced by toJSON(). */
+  static fromJSON(m) {
+    return new RenewalRequirements({
+      requirementsVersion: m.requirements_version,
+      components: (m.components ?? []).map((c) => RenewalComponent.fromJSON(c)),
+    });
+  }
+
+  /** Serializes to the snake-case wire shape (see `codec.js`). */
+  toJSON() {
+    return {
+      requirements_version: this.requirementsVersion,
+      components: this.components.map((c) => c.toJSON()),
+    };
   }
 }
 

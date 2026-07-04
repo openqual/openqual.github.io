@@ -14,12 +14,14 @@
 
 import 'attachment.dart';
 import 'cert_type.dart';
+import 'codec.dart';
 import 'constants.dart';
 import 'enums.dart';
 import 'person_snapshot.dart';
 import 'previous_renewals.dart';
 import 'renewal_progress.dart';
 import 'source.dart';
+import 'wire.dart';
 
 /// A portable representation of a person's certification.
 class Certification {
@@ -60,6 +62,80 @@ class Certification {
     this.notes,
     this.source,
   });
+
+  /// Reads the wire shape produced by [toMap].
+  factory Certification.fromMap(Map<String, dynamic> m) => Certification(
+        schemaVersion:
+            (m['schema_version'] as String?) ?? openqualSchemaVersion,
+        holder: PersonSnapshot.fromMap(
+            (m['holder'] as Map).cast<String, dynamic>()),
+        certType:
+            CertType.fromMap((m['cert_type'] as Map).cast<String, dynamic>()),
+        certificationDate: readDateTime(m['certification_date']),
+        expirationDate: readDateTime(m['expiration_date']),
+        issuedCertId: m['issued_cert_id'] as String?,
+        issuingLocality: m['issuing_locality'] as String?,
+        issuingTimezone: m['issuing_timezone'] as String?,
+        status: m['status'] == null
+            ? null
+            : certStatusFromWire(m['status'] as String),
+        instructor: m['instructor'] == null
+            ? null
+            : PersonSnapshot.fromMap(
+                (m['instructor'] as Map).cast<String, dynamic>()),
+        certDocument: m['cert_document'] == null
+            ? null
+            : Attachment.fromMap(
+                (m['cert_document'] as Map).cast<String, dynamic>()),
+        earnedViaTaskbook: m['earned_via_taskbook'] == null
+            ? null
+            : EarnedViaTaskbook.fromMap(
+                (m['earned_via_taskbook'] as Map).cast<String, dynamic>()),
+        renewalProgress: m['renewal_progress'] == null
+            ? null
+            : RenewalProgress.fromMap(
+                (m['renewal_progress'] as Map).cast<String, dynamic>()),
+        previousRenewals: m['previous_renewals'] == null
+            ? null
+            : PreviousRenewals.fromMap(
+                (m['previous_renewals'] as Map).cast<String, dynamic>()),
+        attachments:
+            readMapList(m['attachments']).map(Attachment.fromMap).toList(),
+        notes: m['notes'] as String?,
+        source: m['source'] == null
+            ? null
+            : Source.fromMap((m['source'] as Map).cast<String, dynamic>()),
+      );
+
+  /// Serializes to the snake-case wire shape with raw [DateTime]
+  /// values (see `codec.dart`). Use [toJson] for portable JSON.
+  Map<String, dynamic> toMap() => {
+        'schema_version': schemaVersion,
+        'holder': holder.toMap(),
+        'cert_type': certType.toMap(),
+        if (certificationDate != null)
+          'certification_date': certificationDate,
+        if (expirationDate != null) 'expiration_date': expirationDate,
+        if (issuedCertId != null) 'issued_cert_id': issuedCertId,
+        if (issuingLocality != null) 'issuing_locality': issuingLocality,
+        if (issuingTimezone != null) 'issuing_timezone': issuingTimezone,
+        if (status != null) 'status': wireValue(status!),
+        if (instructor != null) 'instructor': instructor!.toMap(),
+        if (certDocument != null) 'cert_document': certDocument!.toMap(),
+        if (earnedViaTaskbook != null)
+          'earned_via_taskbook': earnedViaTaskbook!.toMap(),
+        if (renewalProgress != null)
+          'renewal_progress': renewalProgress!.toMap(),
+        if (previousRenewals != null)
+          'previous_renewals': previousRenewals!.toMap(),
+        'attachments': attachments.map((a) => a.toMap()).toList(),
+        if (notes != null) 'notes': notes,
+        if (source != null) 'source': source!.toMap(),
+      };
+
+  /// Portable JSON form: [toMap] with every [DateTime] converted to
+  /// ISO-8601 UTC strings.
+  Map<String, dynamic> toJson() => datesToIso(toMap());
 
   /// Pure. Returns `true` iff the certification is valid at [now].
   ///
@@ -121,4 +197,21 @@ class EarnedViaTaskbook {
     required this.completedAt,
     this.source,
   });
+
+  /// Reads the wire shape produced by [toMap].
+  factory EarnedViaTaskbook.fromMap(Map<String, dynamic> m) =>
+      EarnedViaTaskbook(
+        taskbookTitle: m['taskbook_title'] as String,
+        completedAt: readDateTime(m['completed_at'])!,
+        source: m['source'] == null
+            ? null
+            : Source.fromMap((m['source'] as Map).cast<String, dynamic>()),
+      );
+
+  /// Serializes to the snake-case wire shape (see `codec.dart`).
+  Map<String, dynamic> toMap() => {
+        'taskbook_title': taskbookTitle,
+        'completed_at': completedAt,
+        if (source != null) 'source': source!.toMap(),
+      };
 }
