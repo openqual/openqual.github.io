@@ -1,0 +1,114 @@
+# OpenQual's CI lane. Born 2026-08-05, because this repo had no `.github`
+# directory — the reference implementation of a published standard, with a
+# five-file test suite, and nothing ran it.
+#
+# It is the cheapest CI in the family to justify: `openqual/dart` depends on
+# nothing but the `test` package, so there are no sibling repos to clone, no
+# credentials, and no cloud. It just needed to exist.
+#
+# ── Read-only by construction ─────────────────────────────────────────────
+# This repo is collab-only for writes (CLAUDE.md §OpenQual): no agent commits
+# to the standard without a human in the room. That rule is about WRITES.
+# Running the suite is a read, and a standard whose reference implementation
+# is unverified is a worse position for implementers than one whose tests run
+# on every push.
+#
+# Nothing here writes, publishes, releases, or touches the pages deployment.
+# Permissions are pinned to `contents: read` so it cannot, even by accident —
+# the repo also serves openqual.github.io, and a workflow with default write
+# permissions sitting next to a Pages deployment is a hazard worth removing
+# before it is needed.
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  dart:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: dart
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - name: Install
+        run: dart pub get
+
+      # `--fatal-infos` matches firecal_core's lane. A published standard's
+      # reference implementation is exactly where a lint hint is worth
+      # treating as a defect: implementers read this code as the example.
+      - name: Analyze
+        run: dart analyze --fatal-infos
+
+      - name: Test
+        run: dart test
+
+  # The schemas are the normative artifact — the Dart package is one
+  # implementation of them, and `examples_parse_test.dart` already proves the
+  # documented examples round-trip through it. What that does NOT cover is the
+  # spec's own internal navigation: 30 markdown files with 45 relative links
+  # between them, on a site implementers actually read. A broken cross-
+  # reference in a published standard is a defect even though no code notices.
+  #
+  # (The first draft of this job validated `schemas/**/*.json` as JSON Schema.
+  # There are none — the schemas are markdown. It would have shipped a job
+  # that either red on its own empty-glob guard or, without that guard, gone
+  # green while checking nothing.)
+  schemas:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Cross-references between schema documents resolve
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import pathlib, re, sys
+
+          root = pathlib.Path("schemas")
+          if not root.is_dir():
+              sys.exit("schemas/ is missing — this guard is pointing at nothing")
+
+          files = sorted(root.rglob("*.md"))
+          if not files:
+              # An empty glob reporting success is the false-green shape these
+              # lanes keep finding. Refuse rather than pass.
+              sys.exit("no schema documents found — refusing to report green")
+
+          link = re.compile(r"\[[^\]]*\]\(([^)#]+)(#[^)]*)?\)")
+          broken, checked = [], 0
+          for f in files:
+              for m in link.finditer(f.read_text()):
+                  target = m.group(1).strip()
+                  if target.startswith(("http://", "https://", "mailto:")):
+                      continue
+                  checked += 1
+                  if not (f.parent / target).resolve().exists():
+                      broken.append(f"{f}: {target}")
+
+          print(f"{len(files)} documents, {checked} relative links checked")
+          if not checked:
+              sys.exit("no relative links found — the pattern is not matching, "
+                       "so this check is asserting nothing")
+          if broken:
+              sys.exit("broken cross-reference(s):\n  " + "\n  ".join(broken))
+          PY
