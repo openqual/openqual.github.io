@@ -16,6 +16,23 @@ import 'codec.dart';
 import 'person_snapshot.dart';
 import 'source.dart';
 
+/// How this attachment entry arrived on the current document.
+enum AttachmentProvenance {
+  direct('direct'),
+  inherited('inherited');
+
+  const AttachmentProvenance(this.wire);
+
+  final String wire;
+
+  static AttachmentProvenance fromWire(Object? raw) {
+    for (final value in AttachmentProvenance.values) {
+      if (value.wire == raw) return value;
+    }
+    return AttachmentProvenance.direct;
+  }
+}
+
 /// A file attached to any node in the OpenQual standard.
 ///
 /// At least one of [path] or [content] must be present. Host-stored
@@ -45,6 +62,11 @@ class Attachment {
 
   final Source? source;
 
+  /// Explicitly non-null so the document can later distinguish authored
+  /// evidence from copied source material without guessing from uploader
+  /// identity, which is the wrong axis for org-deletion rescue.
+  final AttachmentProvenance provenance;
+
   const Attachment({
     required this.name,
     this.path,
@@ -57,6 +79,7 @@ class Attachment {
     this.downloadUrl,
     this.downloadUrlExpiresAt,
     this.source,
+    this.provenance = AttachmentProvenance.direct,
   });
 
   /// Reads the wire shape produced by [toMap].
@@ -77,6 +100,7 @@ class Attachment {
         source: m['source'] == null
             ? null
             : Source.fromMap((m['source'] as Map).cast<String, dynamic>()),
+        provenance: AttachmentProvenance.fromWire(m['provenance']),
       );
 
   /// Serializes to the snake-case wire shape (see `codec.dart`).
@@ -93,5 +117,6 @@ class Attachment {
         if (downloadUrlExpiresAt != null)
           'download_url_expires_at': downloadUrlExpiresAt,
         if (source != null) 'source': source!.toMap(),
+        'provenance': provenance.wire,
       };
 }

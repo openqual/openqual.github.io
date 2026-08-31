@@ -83,6 +83,7 @@ Attachment attachment() => Attachment(
       contentEncoding: 'base64',
       downloadUrl: 'https://example.org/cert.pdf',
       downloadUrlExpiresAt: DateTime.utc(2026, 12, 31),
+      provenance: AttachmentProvenance.inherited,
     );
 
 void main() {
@@ -350,5 +351,17 @@ void main() {
         TrainingRecord(title: 'T', holder: person())
             .toJson()['schema_version'],
         '1.0.0');
+  });
+
+  test('Attachment defaults missing provenance to direct', () {
+    final attachment = Attachment.fromMap({
+      'name': 'photo.jpg',
+      'path': 'users/u1/taskbooks/book-1/book/photo.jpg',
+      'mime_type': 'image/jpeg',
+      'size_bytes': 42,
+      'uploaded_at': '2026-08-31T00:00:00.000Z',
+    });
+    expect(attachment.provenance, AttachmentProvenance.direct);
+    expect(attachment.toMap()['provenance'], 'direct');
   });
 }

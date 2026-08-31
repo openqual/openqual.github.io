@@ -17,6 +17,17 @@
 const { readDate, dateToIso } = require('./codec');
 const { Source } = require('./source');
 
+const ATTACHMENT_PROVENANCE = Object.freeze({
+  DIRECT: 'direct',
+  INHERITED: 'inherited',
+});
+
+function attachmentProvenanceFromWire(raw) {
+  return raw === ATTACHMENT_PROVENANCE.INHERITED
+    ? ATTACHMENT_PROVENANCE.INHERITED
+    : ATTACHMENT_PROVENANCE.DIRECT;
+}
+
 /**
  * A file attached to any node in the OpenQual standard.
  *
@@ -37,6 +48,7 @@ class Attachment {
     downloadUrl = null,
     downloadUrlExpiresAt = null,
     source = null,
+    provenance = ATTACHMENT_PROVENANCE.DIRECT,
   }) {
     this.name = name;
     this.path = path;
@@ -55,6 +67,10 @@ class Attachment {
     // unknown/indefinite validity.
     this.downloadUrlExpiresAt = downloadUrlExpiresAt;
     this.source = source;
+    // Non-null so downstream storage rescue can distinguish authored
+    // evidence from inherited source material without guessing from
+    // uploadedBy, which is not the ownership axis.
+    this.provenance = attachmentProvenanceFromWire(provenance);
     Object.freeze(this);
   }
 
@@ -75,6 +91,7 @@ class Attachment {
       downloadUrl: m.download_url ?? null,
       downloadUrlExpiresAt: readDate(m.download_url_expires_at),
       source: m.source == null ? null : Source.fromJSON(m.source),
+      provenance: attachmentProvenanceFromWire(m.provenance),
     });
   }
 
@@ -93,8 +110,13 @@ class Attachment {
       out.download_url_expires_at = dateToIso(this.downloadUrlExpiresAt);
     }
     if (this.source != null) out.source = this.source.toJSON();
+    out.provenance = this.provenance;
     return out;
   }
 }
 
-module.exports = { Attachment };
+module.exports = {
+  Attachment,
+  ATTACHMENT_PROVENANCE,
+  attachmentProvenanceFromWire,
+};
