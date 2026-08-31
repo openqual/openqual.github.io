@@ -14,6 +14,7 @@ that carries attachments.
 | `size_bytes` | `int` | Yes | File size in bytes. `0` is valid (empty file). |
 | `uploaded_at` | `DateTime` | Yes | Time the file was uploaded to backing storage. If the attachment has no backing-storage upload phase (e.g. an inline or externally-hosted file recorded directly against the node), use the time of attachment association — the moment the attachment was attached to its node. |
 | `uploaded_by` | `PersonSnapshot?` | No | Frozen identity of the person who supplied this file, captured at upload time. Survives the uploader's account deletion and travels across hosts — a receiving system can render "Uploaded by Alice Smith" without the uploader existing in its user directory. Snapshot-frozen like all audit data. |
+| `provenance` | `String?` | No | How this entry arrived on the document carrying it. `direct` when attached to this document, `inherited` when carried over from a document it was created from (a template, or a duplicated record). Absent means unknown, which a receiving system should treat as `direct`. See "Provenance" below. |
 | `content` | `String?` | No | Base64-encoded file content. When present, the attachment is self-contained and portable — a receiving system can reconstruct the file without resolving `path`. When absent, `path` (or a live `download_url`) is the only way to access the file. |
 | `content_encoding` | `String?` | No | Encoding of `content`. Required when `content` is set. The only value defined in v1.0 is `base64`; future versions may add others. |
 | `download_url` | `String?` | No | A dereferenceable URL the producing host guarantees fetchable until `download_url_expires_at`. For cross-host "lite" exports only — see "Export profiles" below. Distinct from `path`, whose opacity rules are unchanged. |
@@ -82,3 +83,30 @@ Implementations storing records locally MAY omit `content` and rely on
   or alternative encodings. For v1.0, portability takes priority.
 - For packaging a record + its attachments as a single deliverable
   file, see the non-normative guide `docs/export_packaging.md`.
+
+
+## Provenance
+
+`provenance` distinguishes files that were **attached to this record** from
+files that were **carried onto it** when the record was created from another
+one, such as instantiating a working record from a template or duplicating an
+existing record.
+
+The distinction is not bookkeeping. It answers a question a receiving system
+genuinely has: which of these files is evidence produced *for this record*, and
+which is reference material inherited from the thing it was created from. A
+completed inspection carrying both the department's reference photograph and
+the inspector's own photograph of the equipment holds two files of very
+different standing, and nothing else in the record distinguishes them.
+
+Consumers that do not care may ignore the field entirely; it is optional and
+absence is not an error.
+
+**Absent means unknown, and unknown should be read as `direct`.** Records
+written before this field existed carry no provenance, and treating those files
+as inherited would wrongly demote first-party evidence. When a host cannot
+determine provenance it should omit the field rather than guess.
+
+**Provenance is set at attachment time and does not change.** A file's origin
+is a historical fact about how it got there. Hosts that relocate or re-key
+storage do not alter it.

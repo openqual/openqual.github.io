@@ -17,7 +17,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 
-const { Attachment } = require('../attachment');
+const { Attachment, ATTACHMENT_PROVENANCE } = require('../attachment');
 const {
   CertType,
   AuthoritativeCode,
@@ -118,6 +118,7 @@ const attachment = () =>
     contentEncoding: 'base64',
     downloadUrl: 'https://example.org/cert.pdf',
     downloadUrlExpiresAt: new Date(Date.UTC(2026, 11, 31)),
+    provenance: ATTACHMENT_PROVENANCE.INHERITED,
   });
 
 test('Taskbook round-trips (all task types, signoffs, scoring)', () => {
@@ -229,6 +230,18 @@ test('Taskbook round-trips (all task types, signoffs, scoring)', () => {
   }).computeStatus({ now: new Date(Date.UTC(2026, 6, 3)) });
 
   expectRoundTrip(book, (m) => Taskbook.fromJSON(m));
+});
+
+test('Attachment defaults missing provenance to direct', () => {
+  const attachment = Attachment.fromJSON({
+    name: 'photo.jpg',
+    path: 'users/u1/taskbooks/book-1/book/photo.jpg',
+    mime_type: 'image/jpeg',
+    size_bytes: 42,
+    uploaded_at: '2026-08-31T00:00:00.000Z',
+  });
+  assert.equal(attachment.provenance, ATTACHMENT_PROVENANCE.DIRECT);
+  assert.equal(attachment.toJSON().provenance, ATTACHMENT_PROVENANCE.DIRECT);
 });
 
 test('Certification round-trips (renewal window, codes, progress)', () => {
