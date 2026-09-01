@@ -22,8 +22,10 @@
 /// values — storage SDKs that auto-convert (e.g. Firestore → Timestamp)
 /// take them as-is. For portable JSON, pass the top-level map through
 /// [datesToIso]. Deserializers accept [DateTime], ISO-8601 [String],
-/// or any object exposing `toDate() → DateTime` (duck-typed, so this
-/// package needs no storage-SDK dependency).
+/// Firestore-Timestamp-shaped maps (`_seconds` / `_nanoseconds` or
+/// `seconds` / `nanos`, numbers or numeric strings), or any object
+/// exposing `toDate() → DateTime` (duck-typed, so this package needs no
+/// storage-SDK dependency).
 ///
 /// **Null omission.** Optional fields are omitted from output when
 /// null — keeps the on-wire shape tight and avoids confusing
@@ -48,13 +50,17 @@ Object? _datesToIso(Object? v) {
   return v;
 }
 
-/// Tolerant date reader: accepts [DateTime], ISO-8601 [String], or a
-/// duck-typed `toDate()` object (e.g. a Firestore Timestamp). Returns
-/// null for null input; throws [ArgumentError] on anything else.
+/// Tolerant date reader: accepts [DateTime], ISO-8601 [String], a
+/// Firestore-Timestamp-shaped map (`_seconds` / `_nanoseconds` or
+/// `seconds` / `nanos`), or a duck-typed `toDate()` object (e.g. a
+/// Firestore Timestamp). Returns null for null input; throws
+/// [ArgumentError] on anything else.
 DateTime? readDateTime(Object? v) {
   if (v == null) return null;
   if (v is DateTime) return v;
   if (v is String) return DateTime.parse(v);
+  final mapped = _readTimestampMap(v);
+  if (mapped != null) return mapped;
   try {
     final d = (v as dynamic).toDate();
     if (d is DateTime) return d;
@@ -62,6 +68,21 @@ DateTime? readDateTime(Object? v) {
     // fall through
   }
   throw ArgumentError.value(v, 'v', 'cannot decode as DateTime');
+}
+
+DateTime? _readTimestampMap(Object? v) {
+  if (v is! Map) return null;
+  final seconds = _readTimestampInt(v['_seconds'] ?? v['seconds']);
+  if (seconds == null) return null;
+  final nanos = _readTimestampInt(v['_nanoseconds'] ?? v['nanos']) ?? 0;
+  final micros = seconds * Duration.microsecondsPerSecond + (nanos ~/ 1000);
+  return DateTime.fromMicrosecondsSinceEpoch(micros, isUtc: true);
+}
+
+int? _readTimestampInt(Object? v) {
+  if (v is int) return v;
+  if (v is String) return int.tryParse(v);
+  return null;
 }
 
 /// Casts a raw wire value to a `Map<String, dynamic>`; null passes
