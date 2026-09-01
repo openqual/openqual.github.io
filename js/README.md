@@ -84,11 +84,13 @@ Every value object implements `toJSON()` — producing the published
 snake_case wire shape with ISO-8601 UTC date strings, so
 `JSON.stringify` picks it up automatically — and a static
 `fromJSON(obj)` that reads the same shape (dates as ISO strings,
-`Date` instances, or duck-typed `toDate()` objects). Optional fields
-are omitted when null; required list fields serialize even when
-empty. Enum properties already hold the published wire strings, so
-they pass through unchanged. The shapes are identical to the Dart
-binding's `toMap()` / `fromMap()` output.
+`Date` instances, Firestore-Timestamp-shaped maps with
+`_seconds` / `_nanoseconds` or `seconds` / `nanos`, or duck-typed
+`toDate()` objects). Optional fields are omitted when null; required
+list fields serialize even when empty. Enum properties already hold
+the published wire strings, so they pass through unchanged. The
+shapes are identical to the Dart binding's `toMap()` / `fromMap()`
+output.
 
 ## Tests
 

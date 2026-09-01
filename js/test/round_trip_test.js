@@ -77,6 +77,7 @@ const { TaskbookSubtask } = require('../taskbook_subtask');
 const { TaskbookTask } = require('../taskbook_task');
 const { TrainingRecord, TrainingLocation } = require('../training_record');
 const { ValidityPeriod } = require('../validity_period');
+const { readDate } = require('../codec');
 
 /**
  * Round-trip assertion: serialize → JSON encode → decode → fromJSON →
@@ -230,6 +231,40 @@ test('Taskbook round-trips (all task types, signoffs, scoring)', () => {
   }).computeStatus({ now: new Date(Date.UTC(2026, 6, 3)) });
 
   expectRoundTrip(book, (m) => Taskbook.fromJSON(m));
+});
+
+test('Attachment reads callable Firestore timestamp maps', () => {
+  const attachment = Attachment.fromJSON({
+    name: 'callable.pdf',
+    path: 'users/u1/taskbooks/book-1/book/callable.pdf',
+    mime_type: 'application/pdf',
+    size_bytes: 64,
+    uploaded_at: {
+      _seconds: '1780315200',
+      _nanoseconds: '123456000',
+    },
+    download_url_expires_at: {
+      seconds: 1780318800,
+      nanos: 987000000,
+    },
+  });
+
+  assert.equal(
+    attachment.uploadedAt.toISOString(),
+    '2026-06-01T12:00:00.123Z',
+  );
+  assert.equal(
+    attachment.downloadUrlExpiresAt.toISOString(),
+    '2026-06-01T13:00:00.987Z',
+  );
+  expectRoundTrip(attachment, (m) => Attachment.fromJSON(m));
+});
+
+test('readDate accepts the REST/protobuf timestamp shape directly', () => {
+  assert.equal(
+    readDate({ seconds: '1780315200', nanos: '123456000' }).toISOString(),
+    '2026-06-01T12:00:00.123Z',
+  );
 });
 
 test('Attachment defaults missing provenance to direct', () => {

@@ -24,8 +24,10 @@
  *
  * **Date handling.** `toJSON()` emits ISO-8601 UTC strings (the JS
  * binding is JSON-native). `fromJSON()` accepts ISO-8601 strings,
- * `Date` instances, or any object exposing `toDate() → Date`
- * (duck-typed, so this package needs no storage-SDK dependency).
+ * `Date` instances, Firestore-Timestamp-shaped maps (`_seconds` /
+ * `_nanoseconds` or `seconds` / `nanos`, numbers or numeric strings),
+ * or any object exposing `toDate() → Date` (duck-typed, so this
+ * package needs no storage-SDK dependency).
  *
  * **Null omission.** Optional fields are omitted from output when
  * null — keeps the on-wire shape tight and avoids confusing
@@ -34,9 +36,11 @@
  */
 
 /**
- * Tolerant date reader: accepts a `Date`, an ISO-8601 string, or a
- * duck-typed `toDate()` object (e.g. a Firestore Timestamp). Returns
- * null for null/undefined input; throws `TypeError` on anything else.
+ * Tolerant date reader: accepts a `Date`, an ISO-8601 string, a
+ * Firestore-Timestamp-shaped map (`_seconds` / `_nanoseconds` or
+ * `seconds` / `nanos`), or a duck-typed `toDate()` object
+ * (e.g. a Firestore Timestamp). Returns null for null/undefined input;
+ * throws `TypeError` on anything else.
  *
  * @param {*} v
  * @returns {Date|null}
@@ -45,11 +49,28 @@ function readDate(v) {
   if (v == null) return null;
   if (v instanceof Date) return v;
   if (typeof v === 'string') return new Date(v);
+  const mapped = readTimestampMap(v);
+  if (mapped) return mapped;
   if (typeof v.toDate === 'function') {
     const d = v.toDate();
     if (d instanceof Date) return d;
   }
   throw new TypeError(`cannot decode as Date: ${v}`);
+}
+
+function readTimestampMap(v) {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return null;
+  const seconds = readTimestampInt(v._seconds ?? v.seconds);
+  if (seconds == null) return null;
+  const nanos = readTimestampInt(v._nanoseconds ?? v.nanos) ?? 0;
+  const millis = (seconds * 1000) + Math.trunc(nanos / 1e6);
+  return new Date(millis);
+}
+
+function readTimestampInt(v) {
+  if (typeof v === 'number' && Number.isInteger(v)) return v;
+  if (typeof v === 'string' && /^-?\d+$/.test(v)) return Number.parseInt(v, 10);
+  return null;
 }
 
 /**

@@ -17,6 +17,7 @@ import 'dart:convert';
 import 'package:openqual/attachment.dart';
 import 'package:openqual/cert_type.dart';
 import 'package:openqual/certification.dart';
+import 'package:openqual/codec.dart';
 import 'package:openqual/completion_state.dart';
 import 'package:openqual/enums.dart';
 import 'package:openqual/organization_snapshot.dart';
@@ -87,6 +88,36 @@ Attachment attachment() => Attachment(
     );
 
 void main() {
+  test('Attachment reads callable Firestore timestamp maps', () {
+    final attachment = Attachment.fromMap({
+      'name': 'callable.pdf',
+      'path': 'users/u1/taskbooks/book-1/book/callable.pdf',
+      'mime_type': 'application/pdf',
+      'size_bytes': 64,
+      'uploaded_at': {
+        '_seconds': '1780315200',
+        '_nanoseconds': '123456000',
+      },
+      'download_url_expires_at': {
+        'seconds': 1780318800,
+        'nanos': 987000000,
+      },
+    });
+
+    expect(
+      attachment.uploadedAt,
+      DateTime.fromMicrosecondsSinceEpoch(1780315200123456, isUtc: true),
+    );
+    expect(
+      attachment.downloadUrlExpiresAt,
+      DateTime.fromMicrosecondsSinceEpoch(1780318800987000, isUtc: true),
+    );
+    expectRoundTrip(
+      () => datesToIso(attachment.toMap()),
+      (m) => datesToIso(Attachment.fromMap(m).toMap()),
+    );
+  });
+
   test('Taskbook round-trips (all task types, signoffs, scoring)', () {
     final book = Taskbook(
       title: 'Engine Operator Taskbook',
