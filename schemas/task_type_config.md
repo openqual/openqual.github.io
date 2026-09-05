@@ -29,10 +29,14 @@ task's `type` discriminator.
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `evaluation_type` | `EvaluationType` | Yes | `pass_fail` or `scored`. |
-| `autofail` | `bool` | Yes | When `true`, a failed result on this task propagates `complete_failed` up to the parent section (and book). Defaults to `false`. |
 | `points_possible` | `double?` | No | Required when `evaluation_type = scored`. Zero is valid. |
 | `min_passing_points` | `double?` | No | Optional task-level passing threshold. Used for UI feedback; the authoritative pass/fail signal is still `result.outcome`. |
 | `time_threshold` | `TimeThreshold?` | No | Optional target completion time for timed evaluations. See below. |
+
+Whether a failed result fails the whole book is not a criteria
+concern: that is the task-level `critical` flag (`taskbook_task.md` →
+"Critical tasks"). The v1.x `autofail` field that lived here is
+retired in v2.0.
 
 ### `TimeThreshold`
 
@@ -85,13 +89,18 @@ histories, and equipment inventories remain out of scope (see
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `kind` | `InspectionKind` | Yes | `pass_fail`, `measurement`, or `count`. |
-| `critical` | `bool` | Yes | When `true`, a failing observation derives `critical_failure` triage, which propagates `complete_failed` up to the parent section (and book) — the inspection counterpart of `autofail`. Defaults to `false`. |
 | `unit` | `String?` | No | Display unit for `measurement` / `count` kinds, e.g. `"PSI"`, `"batteries"`. |
 | `pass_min` | `double?` | No | `measurement` only: inclusive lower bound of the passing band. Null = unbounded below. |
 | `pass_max` | `double?` | No | `measurement` only: inclusive upper bound of the passing band. Null = unbounded above. |
 | `degraded_min` | `double?` | No | `measurement` only: inclusive lower bound of the degraded band, consulted when the value misses the passing band. |
 | `degraded_max` | `double?` | No | `measurement` only: inclusive upper bound of the degraded band. |
 | `expected_quantity` | `int?` | No | `count` only (required for that kind): the quantity expected. Must be `>= 0`. |
+
+Whether a failing observation is a critical failure of the book is not
+a criteria concern: that is the task-level `critical` flag
+(`taskbook_task.md` → "Critical tasks"), which the triage derivation
+below reads. The v1.x `critical` field that lived here is retired in
+v2.0.
 
 ### `TaskTypeInspectionResult`
 
@@ -108,24 +117,30 @@ histories, and equipment inventories remain out of scope (see
 
 ### Triage derivation (normative)
 
-Pure function of criteria + the observed value:
+Pure function of the criteria, the owning task's `critical` flag
+(`taskbook_task.md` → `critical`), and the observed value. Let `worst`
+be `critical_failure` when the task is `critical`, else `failing`:
 
-- `pass_fail`: `ok = true` → `pass`. `ok = false` → `critical_failure`
-  when `criteria.critical`, else `failing`.
+- `pass_fail`: `ok = true` → `pass`. `ok = false` → `worst`.
 - `measurement`: value within `[pass_min, pass_max]` (null bounds are
   open) → `pass`. Else, if a degraded band is defined and the value is
-  within it → `degraded`. Else → `critical_failure` when
-  `criteria.critical`, else `failing`.
+  within it → `degraded`. Else → `worst`.
 - `count`: `found_quantity >= expected_quantity` → `pass`.
   `0 < found_quantity < expected_quantity` → `degraded`.
-  `found_quantity = 0` → `critical_failure` when `criteria.critical`,
-  else `failing`.
+  `found_quantity = 0` → `worst`.
+
+The task flag changes only the failing branch: a `degraded` observation
+on a critical task is still `degraded`.
 
 Status contribution (see `taskbook_task.md`): a recorded observation
 with triage `pass` or `degraded` behaves as a passing completion;
 `failing` or `critical_failure` behaves as a failed completion
-(`complete_failed`). Only `critical_failure` propagates to the parent
-tiers the way evaluation `autofail` does.
+(`complete_failed`). Propagation to the parent section and book is
+decided by the task's `critical` flag, not by the stored triage:
+`critical_failure` is the triage a critical task's failure records,
+and the flag is what `TaskbookSection.computeStatus` and
+`Taskbook.computeStatus` read ("Critical propagation" in
+`taskbook_section.md` and `taskbook.md`).
 
 ### `TaskTypeTaskbookConfig`
 

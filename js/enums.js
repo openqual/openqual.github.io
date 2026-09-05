@@ -15,9 +15,10 @@
 'use strict';
 
 // Status of any node in the TaskBook hierarchy.
-// `complete_failed` at section/taskbook level may result from autofail
-// propagation, scoring threshold failure, or evaluation failure — not
-// exclusively from evaluation outcome.
+// `complete_failed` at section/taskbook level may result from critical
+// propagation (a failed task flagged `critical`), scoring threshold
+// failure, or evaluation failure, not exclusively from evaluation
+// outcome.
 const WorkItemStatus = Object.freeze({
   NOT_STARTED: 'not_started',
   IN_PROGRESS: 'in_progress',
@@ -155,9 +156,10 @@ const InspectionKind = Object.freeze({
 // Derived severity of a recorded inspection observation. See
 // schemas/task_type_config.md → "Triage derivation".
 //
-// `critical_failure` propagates `complete_failed` to the parent section
-// and book, like evaluation autofail. `degraded` behaves as a passing
-// completion for status purposes.
+// `critical_failure` is the failing triage of a task flagged
+// `TaskbookTask.critical`; that task-level flag is what propagates
+// `complete_failed` to the parent section and book. `degraded` behaves
+// as a passing completion for status purposes.
 const InspectionTriage = Object.freeze({
   PASS: 'pass',
   DEGRADED: 'degraded',

@@ -28,6 +28,16 @@ class TaskbookTask {
   final int order;
   final TaskTypes type;
   final TaskTypeConfig? typeConfig;
+
+  /// When `true`, a failure of this task is a critical failure of the
+  /// whole book: a failed evaluation result, or an inspection observation
+  /// that fails its criteria, derives `critical_failure` triage where
+  /// triage applies and propagates `complete_failed` to the parent
+  /// section and the taskbook. Task-level and type-independent (v2.0
+  /// moved it here from the evaluation `autofail` and inspection
+  /// `critical` criteria fields). Defaults to `false`.
+  final bool critical;
+
   final String title;
   final String? description;
   final DateTime? dueDate;
@@ -50,6 +60,7 @@ class TaskbookTask {
     required this.order,
     this.type = TaskTypes.task,
     this.typeConfig,
+    this.critical = false,
     required this.title,
     this.description,
     this.dueDate,
@@ -74,6 +85,7 @@ class TaskbookTask {
             ? null
             : TaskTypeConfig.fromMap(
                 (m['type_config'] as Map).cast<String, dynamic>()),
+        critical: (m['critical'] as bool?) ?? false,
         title: m['title'] as String,
         description: m['description'] as String?,
         dueDate: readDateTime(m['due_date']),
@@ -102,6 +114,7 @@ class TaskbookTask {
         'order': order,
         'type': wireValue(type),
         if (typeConfig != null) 'type_config': typeConfig!.toMap(),
+        'critical': critical,
         'title': title,
         if (description != null) 'description': description,
         if (dueDate != null) 'due_date': dueDate,
@@ -224,12 +237,14 @@ class TaskbookTask {
     CompletionState? completion,
     List<TaskbookSubtask>? subtasks,
     TaskTypeConfig? typeConfig,
+    bool? critical,
   }) {
     return TaskbookTask(
       id: id,
       order: order,
       type: type,
       typeConfig: typeConfig ?? this.typeConfig,
+      critical: critical ?? this.critical,
       title: title,
       description: description,
       dueDate: dueDate,

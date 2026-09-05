@@ -100,11 +100,12 @@ Returns an updated `Taskbook` with every section also recomputed via
 
 **Priority waterfall:**
 
-1. **Autofail propagation.** If any task anywhere in the book has
-   `status = complete_failed` AND its evaluation criteria has
-   `autofail = true`, OR any inspection task's recorded triage is
-   `critical_failure` (see `task_type_config.md` → "Triage
-   derivation") → `complete_failed`.
+1. **Critical propagation.** If any task anywhere in the book has
+   `critical = true` AND `status = complete_failed` (a failed
+   evaluation result, or an inspection observation that failed its
+   criteria; see `taskbook_task.md` → "Critical tasks") →
+   `complete_failed`. The task flag decides; the stored inspection
+   triage is not consulted.
 2. **Cannot pass.** If `evaluation_config.scoring_mode = aggregated`
    AND `evaluation_config.scoring_config` has a threshold AND
    `points_awarded + points_remaining < effective_threshold_points`

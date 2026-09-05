@@ -353,17 +353,12 @@ class Taskbook {
         allScoredEvalsDone &&
         pointsAwarded < effThresholdPoints;
 
-    // Autofail propagation: evaluation autofail + inspection
-    // critical_failure (the inspection counterpart — see
-    // schemas/taskbook.md).
-    final hasAutofailFailure = allTasks.any((t) {
-      if (t.status != WorkItemStatus.completeFailed) return false;
-      if (t.typeConfig?.evaluationConfig?.criteria?.autofail == true) {
-        return true;
-      }
-      return t.typeConfig?.inspectionConfig?.result?.triage ==
-          InspectionTriage.criticalFailure;
-    });
+    // Critical propagation: a failed task flagged `critical` fails the
+    // whole tier, whatever its type (see schemas/taskbook.md). The task-level
+    // flag is the authority; a stored inspection triage is derived from
+    // it and is not consulted here.
+    final hasCriticalFailure = allTasks.any(
+        (t) => t.critical && t.status == WorkItemStatus.completeFailed);
     final hasFailedSection = computedSections
         .any((s) => s.status == WorkItemStatus.completeFailed);
 
@@ -390,7 +385,7 @@ class Taskbook {
 
     // Priority waterfall.
     WorkItemStatus newStatus = WorkItemStatus.notStarted;
-    if (hasAutofailFailure) {
+    if (hasCriticalFailure) {
       newStatus = WorkItemStatus.completeFailed;
     } else if (cannotPass) {
       newStatus = WorkItemStatus.completeFailed;

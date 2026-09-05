@@ -35,7 +35,8 @@ taskbook's scored evaluation tasks roll up for pass/fail determination.
     `points_remaining` are still reported for display, but the two
     threshold fields are `null` because no book-level threshold
     applies. `Taskbook.computeStatus` enters `complete_failed` only
-    via autofail propagation or a `complete_failed` section.
+    via critical propagation (a failed task flagged `critical`) or a
+    `complete_failed` section.
 - `min_passing_percentage` outside `[0.0, 1.0]` is invalid at both the
   book and section levels. (v0.1 auto-corrected `70` → `0.70` with a
   warning; v1.0 removes the guard — see the migration notes in the

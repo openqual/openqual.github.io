@@ -1,6 +1,6 @@
 # Implementer Checklist
 
-A terse, copy-pasteable checklist for building OpenQual v1.0
+A terse, copy-pasteable checklist for building OpenQual v2.0
 conformance into your implementation. Adoption aid only — the
 normative authority is the Conformance section in
 `schemas/README.md`; when this checklist and the Conformance section
@@ -14,7 +14,7 @@ checklist. Most apps will be both Producer and Receiver.
 ### MUST
 
 - [ ] Populate `schema_version` on every top-level portable record
-      (`Certification`, `Taskbook`, `TrainingRecord`). Current value: `"1.0.0"`.
+      (`Certification`, `Taskbook`, `TrainingRecord`). Current value: `"2.0.0"`.
 - [ ] Populate every field marked "Required" in the spec for the
       record types I emit.
 - [ ] Restrict enum-typed fields to values published in the

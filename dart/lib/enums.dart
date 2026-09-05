@@ -14,9 +14,10 @@
 
 /// Status of any node in the TaskBook hierarchy (task, section, or taskbook).
 ///
-/// `completeFailed` at section/taskbook level may result from autofail
-/// propagation, scoring threshold failure, or evaluation failure — not
-/// exclusively from evaluation outcome.
+/// `completeFailed` at section/taskbook level may result from critical
+/// propagation (a failed task flagged `critical`), scoring threshold
+/// failure, or evaluation failure, not exclusively from evaluation
+/// outcome.
 enum WorkItemStatus {
   notStarted,
   inProgress,
@@ -117,9 +118,10 @@ enum InspectionKind { passFail, measurement, count }
 /// Derived severity of a recorded inspection observation. See
 /// schemas/task_type_config.md → "Triage derivation".
 ///
-/// `criticalFailure` propagates `completeFailed` to the parent section
-/// and book, like evaluation autofail. `degraded` behaves as a passing
-/// completion for status purposes.
+/// `criticalFailure` is the failing triage of a task flagged
+/// `TaskbookTask.critical`; that task-level flag is what propagates
+/// `completeFailed` to the parent section and book. `degraded` behaves
+/// as a passing completion for status purposes.
 enum InspectionTriage { pass, degraded, failing, criticalFailure }
 
 /// Optional recommended follow-up on an inspection result.

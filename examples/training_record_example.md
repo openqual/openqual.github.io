@@ -36,7 +36,7 @@ the linkage lives on the certification side, never here (a
 
 ```json
 {
-  "schema_version": "1.0.0",
+  "schema_version": "2.0.0",
 
   "title": "Pediatric Respiratory Emergencies",
   "description": "Recognition and management of respiratory distress and failure in pediatric patients: anatomy review, assessment triangle, BVM technique, and suction skills practice on pediatric manikins.",

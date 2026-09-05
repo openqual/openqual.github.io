@@ -40,7 +40,7 @@ void main() {
   test('certification_example.md parses and round-trips', () {
     final m = exampleJson('certification_example.md');
     final cert = Certification.fromMap(m);
-    expect(cert.schemaVersion, '1.0.0');
+    expect(cert.schemaVersion, '2.0.0');
     expect(cert.holder.displayName, isNotEmpty);
     // Re-serializing and re-parsing must be stable.
     expect(jsonEncode(Certification.fromMap(cert.toJson()).toJson()),
@@ -50,7 +50,7 @@ void main() {
   test('taskbook_example.md parses and round-trips', () {
     final m = exampleJson('taskbook_example.md');
     final book = Taskbook.fromMap(m);
-    expect(book.schemaVersion, '1.0.0');
+    expect(book.schemaVersion, '2.0.0');
     expect(book.sections, isNotEmpty);
     expect(jsonEncode(Taskbook.fromMap(book.toJson()).toJson()),
         jsonEncode(book.toJson()));
@@ -59,7 +59,7 @@ void main() {
   test('training_record_example.md parses and round-trips', () {
     final m = exampleJson('training_record_example.md');
     final record = TrainingRecord.fromMap(m);
-    expect(record.schemaVersion, '1.0.0');
+    expect(record.schemaVersion, '2.0.0');
     expect(record.topics, hasLength(2));
     expect(record.providerType, isNotNull);
     expect(jsonEncode(TrainingRecord.fromMap(record.toJson()).toJson()),

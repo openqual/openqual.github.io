@@ -106,9 +106,12 @@ class TaskTypeEvaluationConfig {
   }
 }
 
+/// How an evaluation is judged. Whether a failure here fails the whole
+/// book is NOT a criteria concern: that is the task-level
+/// `TaskbookTask.critical` flag (the v1.x `autofail` field retired in
+/// v2.0).
 class TaskTypeEvaluationCriteria {
   final EvaluationType evaluationType;
-  final bool autofail;
   final double? pointsPossible;
   final double? minPassingPoints;
 
@@ -119,7 +122,6 @@ class TaskTypeEvaluationCriteria {
 
   const TaskTypeEvaluationCriteria({
     required this.evaluationType,
-    this.autofail = false,
     this.pointsPossible,
     this.minPassingPoints,
     this.timeThreshold,
@@ -129,7 +131,6 @@ class TaskTypeEvaluationCriteria {
   factory TaskTypeEvaluationCriteria.fromMap(Map<String, dynamic> m) =>
       TaskTypeEvaluationCriteria(
         evaluationType: evaluationTypeFromWire(m['evaluation_type'] as String),
-        autofail: (m['autofail'] as bool?) ?? false,
         pointsPossible: (m['points_possible'] as num?)?.toDouble(),
         minPassingPoints: (m['min_passing_points'] as num?)?.toDouble(),
         timeThreshold: m['time_threshold'] == null
@@ -141,7 +142,6 @@ class TaskTypeEvaluationCriteria {
   /// Serializes to the snake-case wire shape (see `codec.dart`).
   Map<String, dynamic> toMap() => {
         'evaluation_type': wireValue(evaluationType),
-        'autofail': autofail,
         if (pointsPossible != null) 'points_possible': pointsPossible,
         if (minPassingPoints != null) 'min_passing_points': minPassingPoints,
         if (timeThreshold != null) 'time_threshold': timeThreshold!.toMap(),
@@ -292,14 +292,13 @@ class TaskTypeInspectionConfig {
 
 /// What an inspection checks and what passing looks like.
 /// Kind-discriminated: `measurement` uses the band bounds, `count`
-/// uses [expectedQuantity], `pass_fail` uses neither.
+/// uses [expectedQuantity], `pass_fail` uses neither. Whether a failing
+/// observation is a critical failure of the book is NOT a criteria
+/// concern: that is the task-level `TaskbookTask.critical` flag (the
+/// v1.x `criteria.critical` field retired in v2.0), passed into
+/// [deriveTriage].
 class TaskTypeInspectionCriteria {
   final InspectionKind kind;
-
-  /// When `true`, a failing observation derives `critical_failure`
-  /// triage, which propagates `complete_failed` up to the parent
-  /// section (and book) — the inspection counterpart of `autofail`.
-  final bool critical;
 
   /// Display unit for `measurement` / `count` kinds, e.g. `"PSI"`.
   final String? unit;
@@ -318,7 +317,6 @@ class TaskTypeInspectionCriteria {
 
   const TaskTypeInspectionCriteria({
     required this.kind,
-    this.critical = false,
     this.unit,
     this.passMin,
     this.passMax,
@@ -332,7 +330,6 @@ class TaskTypeInspectionCriteria {
   factory TaskTypeInspectionCriteria.fromMap(Map<String, dynamic> m) =>
       TaskTypeInspectionCriteria(
         kind: inspectionKindFromWire(m['kind'] as String),
-        critical: (m['critical'] as bool?) ?? false,
         unit: m['unit'] as String?,
         passMin: (m['pass_min'] as num?)?.toDouble(),
         passMax: (m['pass_max'] as num?)?.toDouble(),
@@ -344,7 +341,6 @@ class TaskTypeInspectionCriteria {
   /// Serializes to the snake-case wire shape (see `codec.dart`).
   Map<String, dynamic> toMap() => {
         'kind': wireValue(kind),
-        'critical': critical,
         if (unit != null) 'unit': unit,
         if (passMin != null) 'pass_min': passMin,
         if (passMax != null) 'pass_max': passMax,
@@ -356,10 +352,14 @@ class TaskTypeInspectionCriteria {
   /// Pure. Derives the triage for an observed value per the normative
   /// rules in schemas/task_type_config.md → "Triage derivation".
   ///
-  /// Pass the observation matching [kind]: [ok] for `pass_fail`,
-  /// [measuredValue] for `measurement`, [foundQuantity] for `count`.
-  /// Throws [ArgumentError] when the kind's observation is missing.
+  /// [critical] is the owning task's `TaskbookTask.critical` flag: a
+  /// failing observation on a critical task derives `critical_failure`,
+  /// otherwise `failing`. Pass the observation matching [kind]: [ok] for
+  /// `pass_fail`, [measuredValue] for `measurement`, [foundQuantity] for
+  /// `count`. Throws [ArgumentError] when the kind's observation is
+  /// missing.
   InspectionTriage deriveTriage({
+    required bool critical,
     bool? ok,
     double? measuredValue,
     int? foundQuantity,

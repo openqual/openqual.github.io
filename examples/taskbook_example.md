@@ -48,7 +48,7 @@ source.
 
 ```json
 {
-  "schema_version": "1.0.0",
+  "schema_version": "2.0.0",
 
   "taskbook_type": "taskbook",
   "title": "Aurora Fire EMT Skills Verification — Spring 2026 Cohort",
@@ -128,11 +128,11 @@ source.
           "id": "t-pa-demo",
           "order": 0,
           "type": "evaluation",
+          "critical": false,
           "type_config": {
             "evaluation_config": {
               "criteria": {
-                "evaluation_type": "pass_fail",
-                "autofail": false
+                "evaluation_type": "pass_fail"
               },
               "result": {
                 "outcome": "pass",
@@ -181,11 +181,11 @@ source.
           "id": "t-sa-quiz",
           "order": 1,
           "type": "evaluation",
+          "critical": false,
           "type_config": {
             "evaluation_config": {
               "criteria": {
                 "evaluation_type": "scored",
-                "autofail": false,
                 "points_possible": 100,
                 "min_passing_points": 70
               },
@@ -239,11 +239,11 @@ source.
           "id": "t-bvm-demo",
           "order": 0,
           "type": "evaluation",
+          "critical": true,
           "type_config": {
             "evaluation_config": {
               "criteria": {
-                "evaluation_type": "pass_fail",
-                "autofail": true
+                "evaluation_type": "pass_fail"
               },
               "result": {
                 "outcome": "pass",
@@ -254,7 +254,7 @@ source.
             }
           },
           "title": "Bag-Valve-Mask Ventilation",
-          "description": "Demonstrate two-person BVM ventilation on a simulated apneic patient. Mask seal, rate, and tidal volume are evaluated. Autofail on loss of airway during drill.",
+          "description": "Demonstrate two-person BVM ventilation on a simulated apneic patient. Mask seal, rate, and tidal volume are evaluated. Critical: loss of airway during the drill fails the book.",
           "status": "complete",
           "progress": 1.0,
           "completion": { "complete": true, "completed_at": "2026-04-15T10:12:00Z" },
@@ -292,6 +292,7 @@ source.
           "id": "t-opa-insert",
           "order": 1,
           "type": "task",
+          "critical": false,
           "title": "Oropharyngeal Airway Insertion",
           "description": "Walk through OPA selection, sizing, and insertion on the training manikin.",
           "status": "in_progress",
@@ -336,17 +337,17 @@ source.
           "id": "t-intub-demo",
           "order": 2,
           "type": "evaluation",
+          "critical": true,
           "type_config": {
             "evaluation_config": {
               "criteria": {
-                "evaluation_type": "pass_fail",
-                "autofail": true
+                "evaluation_type": "pass_fail"
               },
               "result": null
             }
           },
           "title": "Endotracheal Intubation Demonstration",
-          "description": "Demonstrate ET intubation on a training manikin under observation. Autofail on esophageal intubation without rapid recognition.",
+          "description": "Demonstrate ET intubation on a training manikin under observation. Critical: esophageal intubation without rapid recognition fails the book.",
           "status": "not_started",
           "progress": 0.0,
           "completion": { "complete": false, "completed_at": null },
@@ -389,11 +390,11 @@ source.
           "id": "t-aed-competency",
           "order": 0,
           "type": "evaluation",
+          "critical": false,
           "type_config": {
             "evaluation_config": {
               "criteria": {
-                "evaluation_type": "pass_fail",
-                "autofail": false
+                "evaluation_type": "pass_fail"
               },
               "result": null
             }
@@ -413,6 +414,7 @@ source.
           "id": "t-bls-cert-check",
           "order": 1,
           "type": "cert",
+          "critical": false,
           "type_config": {
             "cert_config": {
               "accepted_cert_types": [
@@ -548,7 +550,7 @@ source.
 ### Schema version
 
 Same pattern as `Certification`. Taskbook is a top-level portable
-record, so `schema_version` is required. `"1.0.0"`.
+record, so `schema_version` is required. `"2.0.0"`.
 
 ### Assignment — three slots, one pattern
 
@@ -622,18 +624,19 @@ null`.
 
 Four tasks are evaluation-typed:
 
-- **`t-pa-demo`** (pass/fail, autofail off) — `result.outcome = "pass"`
+- **`t-pa-demo`** (pass/fail, not critical): `result.outcome = "pass"`
   with evaluator notes.
 - **`t-sa-quiz`** (scored, 100 points possible) —
   `result.outcome = "pass"` with `points_awarded = 94`. Section 1's
   `scoring_config.min_passing_percentage = 0.7`, so 94/100 comfortably
   clears the section-level threshold.
-- **`t-bvm-demo`** (pass/fail, **autofail on**) — `result.outcome =
-  "pass"`. Had this failed, `autofail = true` would have propagated
-  `complete_failed` up to the section, and in turn to the book's
-  status waterfall (see `TaskbookSection.computeStatus` → Autofail
-  propagation).
-- **`t-intub-demo`** (pass/fail, autofail on) — `result: null`. Not
+- **`t-bvm-demo`** (pass/fail, **critical**): `result.outcome =
+  "pass"`. Had this failed, the task-level `critical = true` would have
+  propagated `complete_failed` up to the section, and in turn to the
+  book's status waterfall (see `TaskbookSection.computeStatus` →
+  Critical propagation). `critical` sits on the task, not inside the
+  evaluation criteria (`taskbook_task.md` → "Critical tasks").
+- **`t-intub-demo`** (pass/fail, critical): `result: null`. Not
   yet performed.
 
 `t-bls-cert-check` is a fifth evaluation-*shaped* task but with
@@ -659,8 +662,8 @@ That partial-progress task, combined with `t-bvm-demo` complete and
 
 Running `Taskbook.computeStatus` on this data:
 
-- **Autofail propagation** — no task has
-  `status = complete_failed` with `autofail = true`. Skip.
+- **Critical propagation**: no task has
+  `status = complete_failed` with `critical = true`. Skip.
 - **Cannot pass / did not pass** — `scoring_mode = per_section`, so
   the book's aggregated threshold branches don't fire. Skip.
 - **Per-section failure propagation** — no section has
@@ -743,7 +746,7 @@ Quick reference — this example exercises:
 - Pending (unsigned) policy showing `completed: false` +
   `signoff_record: null` — the opposite shape
 - Evaluation tasks across all four variations: pass/fail passed,
-  pass/fail with autofail, scored with points, and unevaluated
+  pass/fail on a critical task, scored with points, and unevaluated
   (result null)
 - Plain task with subtasks at mid-progress (`t-opa-insert`, 2 of 4
   subtasks complete) demonstrating the progress rollup
