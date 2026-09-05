@@ -37,11 +37,12 @@ const { Taskbook } = require('../taskbook');
 const { TaskbookSection } = require('../taskbook_section');
 const { TaskbookTask } = require('../taskbook_task');
 
-function inspectionTask({ criteria, result = null, id = 't1' }) {
+function inspectionTask({ criteria, result = null, id = 't1', critical = false }) {
   return new TaskbookTask({
     id,
     order: 0,
     type: TaskTypes.INSPECTION,
+    critical,
     title: 'Inspect',
     typeConfig: new TaskTypeConfig({
       inspectionConfig: new TaskTypeInspectionConfig({ criteria, result }),
@@ -50,19 +51,22 @@ function inspectionTask({ criteria, result = null, id = 't1' }) {
 }
 
 describe('deriveTriage (normative table)', () => {
+  // `critical` is the owning task's flag, passed in: the criteria no
+  // longer carry it (v2.0).
   test('pass_fail', () => {
-    const plain = new TaskTypeInspectionCriteria({ kind: InspectionKind.PASS_FAIL });
-    const critical = new TaskTypeInspectionCriteria({
-      kind: InspectionKind.PASS_FAIL,
-      critical: true,
-    });
-    assert.equal(plain.deriveTriage({ ok: true }), InspectionTriage.PASS);
-    assert.equal(plain.deriveTriage({ ok: false }), InspectionTriage.FAILING);
+    const c = new TaskTypeInspectionCriteria({ kind: InspectionKind.PASS_FAIL });
+    assert.equal(c.deriveTriage({ critical: false, ok: true }), InspectionTriage.PASS);
+    assert.equal(c.deriveTriage({ critical: false, ok: false }), InspectionTriage.FAILING);
+    assert.equal(c.deriveTriage({ critical: true, ok: true }), InspectionTriage.PASS);
     assert.equal(
-      critical.deriveTriage({ ok: false }),
+      c.deriveTriage({ critical: true, ok: false }),
       InspectionTriage.CRITICAL_FAILURE,
     );
-    assert.throws(() => plain.deriveTriage(), TypeError);
+    assert.throws(() => c.deriveTriage({ critical: false }), TypeError);
+    // The task flag is required, never defaulted: a forgotten flag
+    // would silently downgrade a critical failure.
+    assert.throws(() => c.deriveTriage({ ok: false }), TypeError);
+    assert.throws(() => c.deriveTriage(), TypeError);
   });
 
   test('measurement — air-tank PSI bands', () => {
@@ -73,16 +77,14 @@ describe('deriveTriage (normative table)', () => {
       degradedMin: 4000,
       degradedMax: 4500,
     });
-    assert.equal(c.deriveTriage({ measuredValue: 4700 }), InspectionTriage.PASS);
-    assert.equal(c.deriveTriage({ measuredValue: 4200 }), InspectionTriage.DEGRADED);
-    assert.equal(c.deriveTriage({ measuredValue: 3800 }), InspectionTriage.FAILING);
-    const critical = new TaskTypeInspectionCriteria({
-      kind: InspectionKind.MEASUREMENT,
-      passMin: 4500,
-      critical: true,
-    });
+    assert.equal(c.deriveTriage({ critical: false, measuredValue: 4700 }), InspectionTriage.PASS);
+    assert.equal(c.deriveTriage({ critical: false, measuredValue: 4200 }), InspectionTriage.DEGRADED);
+    assert.equal(c.deriveTriage({ critical: false, measuredValue: 3800 }), InspectionTriage.FAILING);
+    // The task flag changes only the failing branch: a degraded reading
+    // on a critical task is still degraded.
+    assert.equal(c.deriveTriage({ critical: true, measuredValue: 4200 }), InspectionTriage.DEGRADED);
     assert.equal(
-      critical.deriveTriage({ measuredValue: 3800 }),
+      c.deriveTriage({ critical: true, measuredValue: 3800 }),
       InspectionTriage.CRITICAL_FAILURE,
     );
   });
@@ -93,8 +95,8 @@ describe('deriveTriage (normative table)', () => {
       passMin: 10,
       passMax: 20,
     });
-    assert.equal(c.deriveTriage({ measuredValue: 15 }), InspectionTriage.PASS);
-    assert.equal(c.deriveTriage({ measuredValue: 25 }), InspectionTriage.FAILING);
+    assert.equal(c.deriveTriage({ critical: false, measuredValue: 15 }), InspectionTriage.PASS);
+    assert.equal(c.deriveTriage({ critical: false, measuredValue: 25 }), InspectionTriage.FAILING);
   });
 
   test('count', () => {
@@ -103,20 +105,16 @@ describe('deriveTriage (normative table)', () => {
       expectedQuantity: 4,
       unit: 'AED pads',
     });
-    assert.equal(c.deriveTriage({ foundQuantity: 4 }), InspectionTriage.PASS);
-    assert.equal(c.deriveTriage({ foundQuantity: 6 }), InspectionTriage.PASS);
-    assert.equal(c.deriveTriage({ foundQuantity: 2 }), InspectionTriage.DEGRADED);
-    assert.equal(c.deriveTriage({ foundQuantity: 0 }), InspectionTriage.FAILING);
-    const critical = new TaskTypeInspectionCriteria({
-      kind: InspectionKind.COUNT,
-      expectedQuantity: 4,
-      critical: true,
-    });
+    assert.equal(c.deriveTriage({ critical: false, foundQuantity: 4 }), InspectionTriage.PASS);
+    assert.equal(c.deriveTriage({ critical: false, foundQuantity: 6 }), InspectionTriage.PASS);
+    assert.equal(c.deriveTriage({ critical: false, foundQuantity: 2 }), InspectionTriage.DEGRADED);
+    assert.equal(c.deriveTriage({ critical: false, foundQuantity: 0 }), InspectionTriage.FAILING);
+    assert.equal(c.deriveTriage({ critical: true, foundQuantity: 2 }), InspectionTriage.DEGRADED);
     assert.equal(
-      critical.deriveTriage({ foundQuantity: 0 }),
+      c.deriveTriage({ critical: true, foundQuantity: 0 }),
       InspectionTriage.CRITICAL_FAILURE,
     );
-    assert.throws(() => c.deriveTriage(), TypeError);
+    assert.throws(() => c.deriveTriage({ critical: false }), TypeError);
   });
 });
 
@@ -169,12 +167,10 @@ describe('section/book propagation', () => {
   const sectionWith = (t) =>
     new TaskbookSection({ id: 's1', order: 0, title: 'S', tasks: [t] });
 
-  test('critical_failure propagates complete_failed to section + book', () => {
+  test('critical task failing propagates complete_failed to section + book', () => {
     const t = inspectionTask({
-      criteria: new TaskTypeInspectionCriteria({
-        kind: InspectionKind.PASS_FAIL,
-        critical: true,
-      }),
+      critical: true,
+      criteria: new TaskTypeInspectionCriteria({ kind: InspectionKind.PASS_FAIL }),
       result: new TaskTypeInspectionResult({
         triage: InspectionTriage.CRITICAL_FAILURE,
         ok: false,
@@ -188,7 +184,7 @@ describe('section/book propagation', () => {
     assert.equal(book.status, WorkItemStatus.COMPLETE_FAILED);
   });
 
-  test('plain failing does NOT autofail the section', () => {
+  test('plain failing on a non-critical task does NOT fail the section', () => {
     const t = inspectionTask({
       criteria: new TaskTypeInspectionCriteria({ kind: InspectionKind.PASS_FAIL }),
       result: new TaskTypeInspectionResult({

@@ -13,6 +13,7 @@ certification.
 | `order` | `int` | Yes | Position among sibling tasks. |
 | `type` | `TaskTypes` | Yes | Polymorphic discriminator. Defaults to `task`. |
 | `type_config` | `TaskTypeConfig?` | No | Type-specific configuration. Required when `type != task`. |
+| `critical` | `bool` | Yes | When `true`, a failure of this task is a critical failure of the whole book: a failed evaluation result, or an inspection observation that fails its criteria, derives `critical_failure` triage where triage applies and propagates `complete_failed` to the parent section and the taskbook. Task-level and independent of `type`; see "Critical tasks" below. Defaults to `false`. |
 | `title` | `String` | Yes | Display name. |
 | `description` | `String?` | No | Prose description. |
 | `due_date` | `DateTime?` | No | Task due date. |
@@ -24,6 +25,31 @@ certification.
 | `signoffs_require_all` | `bool` | Yes | When `true`, all policies MUST be completed. Defaults to `true`. |
 | `attachments` | `List<Attachment>` | Yes | May be empty. |
 | `notes` | `String?` | No | Free-form notes. |
+
+## Critical tasks
+
+`critical` says what a failure of this task means to the book. It is
+one flag, on the task, whatever the task's `type`:
+
+- **Evaluation** (`type = evaluation`): a `result.outcome` of `fail`
+  on a critical task takes the task to `complete_failed` (as any
+  failed evaluation does) AND propagates `complete_failed` to the
+  parent section and the taskbook.
+- **Inspection** (`type = inspection`): an observation that fails its
+  criteria derives `critical_failure` triage instead of `failing`
+  (see `task_type_config.md` → "Triage derivation"), takes the task
+  to `complete_failed`, AND propagates `complete_failed` to the
+  parent section and the taskbook.
+- Other types carry the flag (it is required on every task) but have
+  no failing outcome for it to act on; producers SHOULD leave it
+  `false` there.
+
+Propagation is decided by the flag, not by any stored triage: a
+critical task with `status = complete_failed` fails its section and
+book (`taskbook_section.md` and `taskbook.md` → "Critical
+propagation"). A critical task that passes, or has no result yet,
+propagates nothing. A non-critical task that fails is `complete_failed`
+on its own and leaves the parent tiers to their own waterfalls.
 
 ## Methods
 
@@ -90,3 +116,8 @@ the data. See `task_type_config.md` → `TaskTypeInspectionResult`.
   `signoff_policy_override` in v0.1. See `taskbook.md` → "Per-tier
   policy resolution" and `MIGRATION.md`. `type = inspection` is new
   in v1.0.
+- **v1.x → v2.0:** `critical` is new at the task level and replaces
+  two v1.x spellings of the same concept: `evaluation_config.criteria.autofail`
+  and `inspection_config.criteria.critical`, both retired. A producer
+  upgrading a v1.x record sets `critical = autofail || criteria.critical`
+  and drops the old keys. See `CHANGELOG.md`.

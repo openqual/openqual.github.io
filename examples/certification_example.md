@@ -35,7 +35,7 @@ completed lives in Aurora Fire's separate taskbook system
 
 ```json
 {
-  "schema_version": "1.0.0",
+  "schema_version": "2.0.0",
 
   "holder": {
     "display_name": "Sarah Martinez",
@@ -315,7 +315,7 @@ completed lives in Aurora Fire's separate taskbook system
 
 ### Schema version
 
-Every top-level portable record carries `schema_version` — here, `"1.0.0"`.
+Every top-level portable record carries `schema_version`, here `"2.0.0"`.
 A receiving system inspects this first and decides whether it can
 interpret the record (see `README.md` → "Schema versioning").
 

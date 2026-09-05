@@ -56,10 +56,11 @@ enum).
 
 **Priority waterfall:**
 
-1. **Autofail propagation.** If any child task has
-   `status = complete_failed` AND its evaluation criteria has
-   `autofail = true`, OR any child inspection task's recorded triage
-   is `critical_failure` → `complete_failed`.
+1. **Critical propagation.** If any child task has `critical = true`
+   AND `status = complete_failed` (a failed evaluation result, or an
+   inspection observation that failed its criteria; see
+   `taskbook_task.md` → "Critical tasks") → `complete_failed`. The
+   task flag decides; the stored inspection triage is not consulted.
 2. **Cannot pass.** If `scoring_config` has a threshold and
    `points_awarded + points_remaining < effective_threshold_points`
    → `complete_failed`. (All remaining scored evaluations, even at

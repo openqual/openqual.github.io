@@ -8,14 +8,16 @@ The standard is free, open, and owned by no single vendor. Any department can ad
 
 ## Status
 
-OpenQual **v1.0** is the first stable major release: the portable
-schemas (certifications + renewals, taskbooks with evaluation and
-inspection semantics, training records, snapshots + provenance), a
-single conformance level, and reference implementations in Dart and
-JavaScript. Records written against MAJOR 1 stay interpretable across
-all of 1.x. We welcome contributions, feedback, and discussion from
-anyone working in or around emergency services qualification and
-credentialing.
+OpenQual **v2.0** is the current release: the portable schemas
+(certifications + renewals, taskbooks with evaluation and inspection
+semantics, training records, snapshots + provenance), a single
+conformance level, and reference implementations in Dart and
+JavaScript. v2.0 moves the taskbook `critical` flag to the task level
+(one field, whatever the task type) and retires the two per-type
+spellings it replaces; see [CHANGELOG.md](CHANGELOG.md). Records
+written against a MAJOR stay interpretable across that MAJOR. We
+welcome contributions, feedback, and discussion from anyone working in
+or around emergency services qualification and credentialing.
 
 ## What this repo is
 

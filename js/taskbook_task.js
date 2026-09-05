@@ -35,6 +35,7 @@ class TaskbookTask {
     order,
     type = TaskTypes.TASK,
     typeConfig = null,
+    critical = false,
     title,
     description = null,
     dueDate = null,
@@ -51,6 +52,14 @@ class TaskbookTask {
     this.order = order;
     this.type = type;
     this.typeConfig = typeConfig;
+    // When true, a failure of this task is a critical failure of the
+    // whole book: a failed evaluation result, or an inspection
+    // observation that fails its criteria, derives `critical_failure`
+    // triage where triage applies and propagates `complete_failed` to
+    // the parent section and the taskbook. Task-level and
+    // type-independent (v2.0 moved it here from the evaluation
+    // `autofail` and inspection `critical` criteria fields).
+    this.critical = critical;
     this.title = title;
     this.description = description;
     this.dueDate = dueDate;
@@ -75,6 +84,7 @@ class TaskbookTask {
       order: m.order,
       type: m.type ?? TaskTypes.TASK,
       typeConfig: m.type_config == null ? null : TaskTypeConfig.fromJSON(m.type_config),
+      critical: m.critical ?? false,
       title: m.title,
       description: m.description ?? null,
       dueDate: readDate(m.due_date),
@@ -100,6 +110,7 @@ class TaskbookTask {
       type: this.type,
     };
     if (this.typeConfig != null) out.type_config = this.typeConfig.toJSON();
+    out.critical = this.critical;
     out.title = this.title;
     if (this.description != null) out.description = this.description;
     if (this.dueDate != null) out.due_date = dateToIso(this.dueDate);
@@ -221,6 +232,7 @@ class TaskbookTask {
       order: this.order,
       type: this.type,
       typeConfig: this.typeConfig,
+      critical: this.critical,
       title: this.title,
       description: this.description,
       dueDate: this.dueDate,

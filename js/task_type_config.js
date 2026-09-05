@@ -22,16 +22,20 @@ const {
 } = require('./enums');
 const { Source } = require('./source');
 
+/**
+ * How an evaluation is judged. Whether a failure here fails the whole
+ * book is NOT a criteria concern: that is the task-level
+ * `TaskbookTask.critical` flag (the v1.x `autofail` field retired in
+ * v2.0).
+ */
 class TaskTypeEvaluationCriteria {
   constructor({
     evaluationType,
-    autofail = false,
     pointsPossible = null,
     minPassingPoints = null,
     timeThreshold = null,
   }) {
     this.evaluationType = evaluationType; // EvaluationType enum value
-    this.autofail = autofail;
     this.pointsPossible = pointsPossible;
     this.minPassingPoints = minPassingPoints;
     // Optional target completion time for timed evaluations. The
@@ -45,7 +49,6 @@ class TaskTypeEvaluationCriteria {
   static fromJSON(m) {
     return new TaskTypeEvaluationCriteria({
       evaluationType: m.evaluation_type,
-      autofail: m.autofail ?? false,
       pointsPossible: m.points_possible ?? null,
       minPassingPoints: m.min_passing_points ?? null,
       timeThreshold:
@@ -57,7 +60,6 @@ class TaskTypeEvaluationCriteria {
   toJSON() {
     const out = {
       evaluation_type: this.evaluationType,
-      autofail: this.autofail,
     };
     if (this.pointsPossible != null) out.points_possible = this.pointsPossible;
     if (this.minPassingPoints != null) out.min_passing_points = this.minPassingPoints;
@@ -235,16 +237,16 @@ class TaskTypeInspectionConfig {
 /**
  * What an inspection checks and what passing looks like.
  * Kind-discriminated: `measurement` uses the band bounds, `count`
- * uses expectedQuantity, `pass_fail` uses neither.
+ * uses expectedQuantity, `pass_fail` uses neither. Whether a failing
+ * observation is a critical failure of the book is NOT a criteria
+ * concern: that is the task-level `TaskbookTask.critical` flag (the
+ * v1.x `criteria.critical` field retired in v2.0), passed into
+ * deriveTriage().
  */
 class TaskTypeInspectionCriteria {
   /**
    * @param {object} opts
    *   `kind` — InspectionKind enum value.
-   *   `critical` — when true, a failing observation derives
-   *   `critical_failure` triage, which propagates `complete_failed` up
-   *   to the parent section (and book) — the inspection counterpart of
-   *   `autofail`.
    *   `unit` — display unit for `measurement` / `count` kinds, e.g. "PSI".
    *   `passMin`/`passMax` — `measurement` only: inclusive passing band;
    *   null bounds are open.
@@ -255,7 +257,6 @@ class TaskTypeInspectionCriteria {
    */
   constructor({
     kind,
-    critical = false,
     unit = null,
     passMin = null,
     passMax = null,
@@ -267,7 +268,6 @@ class TaskTypeInspectionCriteria {
       throw new RangeError('expectedQuantity must be >= 0');
     }
     this.kind = kind;
-    this.critical = critical;
     this.unit = unit;
     this.passMin = passMin;
     this.passMax = passMax;
@@ -281,7 +281,6 @@ class TaskTypeInspectionCriteria {
   static fromJSON(m) {
     return new TaskTypeInspectionCriteria({
       kind: m.kind,
-      critical: m.critical ?? false,
       unit: m.unit ?? null,
       passMin: m.pass_min ?? null,
       passMax: m.pass_max ?? null,
@@ -295,7 +294,6 @@ class TaskTypeInspectionCriteria {
   toJSON() {
     const out = {
       kind: this.kind,
-      critical: this.critical,
     };
     if (this.unit != null) out.unit = this.unit;
     if (this.passMin != null) out.pass_min = this.passMin;
@@ -310,15 +308,21 @@ class TaskTypeInspectionCriteria {
    * Pure. Derives the triage for an observed value per the normative
    * rules in schemas/task_type_config.md → "Triage derivation".
    *
-   * Pass the observation matching `kind`: `ok` for `pass_fail`,
-   * `measuredValue` for `measurement`, `foundQuantity` for `count`.
-   * Throws TypeError when the kind's observation is missing.
+   * `critical` is the owning task's `TaskbookTask.critical` flag
+   * (required): a failing observation on a critical task derives
+   * `critical_failure`, otherwise `failing`. Pass the observation
+   * matching `kind`: `ok` for `pass_fail`, `measuredValue` for
+   * `measurement`, `foundQuantity` for `count`. Throws TypeError when
+   * `critical` is not a boolean or the kind's observation is missing.
    *
-   * @param {{ok?: boolean|null, measuredValue?: number|null, foundQuantity?: number|null}} [opts]
+   * @param {{critical: boolean, ok?: boolean|null, measuredValue?: number|null, foundQuantity?: number|null}} opts
    * @returns {string} InspectionTriage enum value
    */
-  deriveTriage({ ok = null, measuredValue = null, foundQuantity = null } = {}) {
-    const worst = this.critical
+  deriveTriage({ critical, ok = null, measuredValue = null, foundQuantity = null } = {}) {
+    if (typeof critical !== 'boolean') {
+      throw new TypeError('deriveTriage requires the task-level `critical` flag');
+    }
+    const worst = critical
       ? InspectionTriage.CRITICAL_FAILURE
       : InspectionTriage.FAILING;
     switch (this.kind) {

@@ -172,12 +172,12 @@ void main() {
               id: 't2',
               order: 1,
               type: TaskTypes.evaluation,
+              critical: true,
               title: 'Timed pump eval',
               typeConfig: TaskTypeConfig(
                 evaluationConfig: TaskTypeEvaluationConfig(
                   criteria: TaskTypeEvaluationCriteria(
                     evaluationType: EvaluationType.scored,
-                    autofail: true,
                     pointsPossible: 10,
                     timeThreshold:
                         TimeThreshold(durationMs: 90000, isHard: true),
@@ -194,12 +194,12 @@ void main() {
               id: 't3',
               order: 2,
               type: TaskTypes.inspection,
+              critical: true,
               title: 'Air-tank PSI',
               typeConfig: TaskTypeConfig(
                 inspectionConfig: TaskTypeInspectionConfig(
                   criteria: TaskTypeInspectionCriteria(
                     kind: InspectionKind.measurement,
-                    critical: true,
                     unit: 'PSI',
                     passMin: 4500,
                     degradedMin: 4000,
@@ -376,12 +376,12 @@ void main() {
         throwsA(isA<AssertionError>()));
   });
 
-  test('schema_version serializes as 1.0.0', () {
-    expect(Taskbook(title: 'B').toJson()['schema_version'], '1.0.0');
+  test('schema_version serializes as 2.0.0', () {
+    expect(Taskbook(title: 'B').toJson()['schema_version'], '2.0.0');
     expect(
         TrainingRecord(title: 'T', holder: person())
             .toJson()['schema_version'],
-        '1.0.0');
+        '2.0.0');
   });
 
   test('Attachment defaults missing provenance to direct', () {

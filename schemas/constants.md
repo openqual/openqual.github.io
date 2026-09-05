@@ -38,7 +38,7 @@ record was produced against. Every top-level portable record
 `schema_version` field; receiving systems use it to decide whether to
 process, reject, or flag a record.
 
-**Value for v1.0:** `"1.0.0"`.
+**Value for v2.0:** `"2.0.0"`.
 
 **Format:** `MAJOR.MINOR.PATCH`, as a plain string (semantic
 versioning). MAJOR, MINOR, and PATCH are non-negative integers.

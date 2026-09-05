@@ -23,11 +23,13 @@ TaskbookTask inspectionTask({
   required TaskTypeInspectionCriteria criteria,
   TaskTypeInspectionResult? result,
   String id = 't1',
+  bool critical = false,
 }) =>
     TaskbookTask(
       id: id,
       order: 0,
       type: TaskTypes.inspection,
+      critical: critical,
       title: 'Inspect',
       typeConfig: TaskTypeConfig(
         inspectionConfig:
@@ -37,16 +39,18 @@ TaskbookTask inspectionTask({
 
 void main() {
   group('deriveTriage (normative table)', () {
+    // `critical` is the owning task's flag, passed in: the criteria no
+    // longer carry it (v2.0).
     test('pass_fail', () {
-      const plain =
-          TaskTypeInspectionCriteria(kind: InspectionKind.passFail);
-      const critical = TaskTypeInspectionCriteria(
-          kind: InspectionKind.passFail, critical: true);
-      expect(plain.deriveTriage(ok: true), InspectionTriage.pass);
-      expect(plain.deriveTriage(ok: false), InspectionTriage.failing);
-      expect(critical.deriveTriage(ok: false),
+      const c = TaskTypeInspectionCriteria(kind: InspectionKind.passFail);
+      expect(c.deriveTriage(critical: false, ok: true), InspectionTriage.pass);
+      expect(c.deriveTriage(critical: false, ok: false),
+          InspectionTriage.failing);
+      expect(c.deriveTriage(critical: true, ok: true), InspectionTriage.pass);
+      expect(c.deriveTriage(critical: true, ok: false),
           InspectionTriage.criticalFailure);
-      expect(() => plain.deriveTriage(), throwsA(isA<ArgumentError>()));
+      expect(() => c.deriveTriage(critical: false),
+          throwsA(isA<ArgumentError>()));
     });
 
     test('measurement — air-tank PSI bands', () {
@@ -57,15 +61,17 @@ void main() {
         degradedMin: 4000,
         degradedMax: 4500,
       );
-      expect(c.deriveTriage(measuredValue: 4700), InspectionTriage.pass);
-      expect(c.deriveTriage(measuredValue: 4200), InspectionTriage.degraded);
-      expect(c.deriveTriage(measuredValue: 3800), InspectionTriage.failing);
-      const critical = TaskTypeInspectionCriteria(
-        kind: InspectionKind.measurement,
-        passMin: 4500,
-        critical: true,
-      );
-      expect(critical.deriveTriage(measuredValue: 3800),
+      expect(c.deriveTriage(critical: false, measuredValue: 4700),
+          InspectionTriage.pass);
+      expect(c.deriveTriage(critical: false, measuredValue: 4200),
+          InspectionTriage.degraded);
+      expect(c.deriveTriage(critical: false, measuredValue: 3800),
+          InspectionTriage.failing);
+      // The task flag changes only the failing branch: a degraded reading
+      // on a critical task is still degraded.
+      expect(c.deriveTriage(critical: true, measuredValue: 4200),
+          InspectionTriage.degraded);
+      expect(c.deriveTriage(critical: true, measuredValue: 3800),
           InspectionTriage.criticalFailure);
     });
 
@@ -75,8 +81,10 @@ void main() {
         passMin: 10,
         passMax: 20,
       );
-      expect(c.deriveTriage(measuredValue: 15), InspectionTriage.pass);
-      expect(c.deriveTriage(measuredValue: 25), InspectionTriage.failing);
+      expect(c.deriveTriage(critical: false, measuredValue: 15),
+          InspectionTriage.pass);
+      expect(c.deriveTriage(critical: false, measuredValue: 25),
+          InspectionTriage.failing);
     });
 
     test('count', () {
@@ -85,16 +93,17 @@ void main() {
         expectedQuantity: 4,
         unit: 'AED pads',
       );
-      expect(c.deriveTriage(foundQuantity: 4), InspectionTriage.pass);
-      expect(c.deriveTriage(foundQuantity: 6), InspectionTriage.pass);
-      expect(c.deriveTriage(foundQuantity: 2), InspectionTriage.degraded);
-      expect(c.deriveTriage(foundQuantity: 0), InspectionTriage.failing);
-      const critical = TaskTypeInspectionCriteria(
-        kind: InspectionKind.count,
-        expectedQuantity: 4,
-        critical: true,
-      );
-      expect(critical.deriveTriage(foundQuantity: 0),
+      expect(c.deriveTriage(critical: false, foundQuantity: 4),
+          InspectionTriage.pass);
+      expect(c.deriveTriage(critical: false, foundQuantity: 6),
+          InspectionTriage.pass);
+      expect(c.deriveTriage(critical: false, foundQuantity: 2),
+          InspectionTriage.degraded);
+      expect(c.deriveTriage(critical: false, foundQuantity: 0),
+          InspectionTriage.failing);
+      expect(c.deriveTriage(critical: true, foundQuantity: 2),
+          InspectionTriage.degraded);
+      expect(c.deriveTriage(critical: true, foundQuantity: 0),
           InspectionTriage.criticalFailure);
     });
   });
@@ -141,11 +150,12 @@ void main() {
     TaskbookSection sectionWith(TaskbookTask t) =>
         TaskbookSection(id: 's1', order: 0, title: 'S', tasks: [t]);
 
-    test('critical_failure propagates complete_failed to section + book',
+    test('critical task failing propagates complete_failed to section + book',
         () {
       final t = inspectionTask(
-        criteria: const TaskTypeInspectionCriteria(
-            kind: InspectionKind.passFail, critical: true),
+        critical: true,
+        criteria:
+            const TaskTypeInspectionCriteria(kind: InspectionKind.passFail),
         result: const TaskTypeInspectionResult(
             triage: InspectionTriage.criticalFailure, ok: false),
       );
@@ -157,7 +167,7 @@ void main() {
       expect(book.status, WorkItemStatus.completeFailed);
     });
 
-    test('plain failing does NOT autofail the section', () {
+    test('plain failing on a non-critical task does NOT fail the section', () {
       final t = inspectionTask(
         criteria:
             const TaskTypeInspectionCriteria(kind: InspectionKind.passFail),

@@ -1,10 +1,10 @@
-# OpenQual Schemas — v1.0
+# OpenQual Schemas, v2.0
 
 OpenQual is an open standard for documenting and exchanging qualification
 records — the credentials, skills, and demonstrated competencies that
 prove a person is ready to do the work.
 
-**Version:** 1.0
+**Version:** 2.0
 **License:** Apache 2.0
 **Copyright:** FireCal LLC
 
@@ -81,18 +81,18 @@ Any party may operate a standards-compliant catalog — catalogs may be
 offered free, commercially, or as subscription services. OpenQual does
 not privilege any single catalog provider.
 
-There is one conformance level in v1.0. No tiered compliance.
+There is one conformance level in v2.0. No tiered compliance.
 
-## Scope of v1.0
+## Scope of v2.0
 
-OpenQual v1.0 publishes the portable class definitions and pure methods
+OpenQual v2.0 publishes the portable class definitions and pure methods
 that a third-party developer needs to build a conformant implementation
 of the core areas of the standard. The release is intentionally focused,
 but it must be self-sufficient: a reader should be able to describe a
 person's certifications and the progress they've made on renewing them
-using v1.0 alone.
+using v2.0 alone.
 
-### In scope for v1.0
+### In scope for v2.0
 
 1. **TaskBook core hierarchy** — the taskbook/section/task/subtask tree,
    signoff policies, assignment, attachments, and the evaluation and
@@ -166,7 +166,7 @@ subject.
 ### Deferred to later versions
 
 See the Roadmap section below for items that are intentionally out of
-v1.0.
+v2.0.
 
 ## Types
 
@@ -247,9 +247,9 @@ Applies at task, section, and taskbook level.
 | `owner_action_needed` | All child work is done; the owner has not yet marked the item complete. Not used at the task level for evaluation-typed tasks. |
 | `pending_validation` | Item has been marked complete but required signoffs are still outstanding, or an evaluation task was marked complete without an outcome recorded. |
 | `complete` | Item is done and all required signoffs are in. |
-| `complete_failed` | Item terminated in a failed state. At the task level this means an evaluation outcome of `fail`, or an inspection triage of `failing` / `critical_failure`. At the section and taskbook levels it additionally fires from autofail propagation (including inspection `critical_failure`), a mathematically-unreachable scoring threshold (cannot-pass), or a completed-but-below-threshold score (did-not-pass). |
+| `complete_failed` | Item terminated in a failed state. At the task level this means an evaluation outcome of `fail`, or an inspection triage of `failing` / `critical_failure`. At the section and taskbook levels it additionally fires from critical propagation (a child task with `critical = true` that reached `complete_failed`, whatever its type; see `taskbook_task.md` → "Critical tasks"), a mathematically-unreachable scoring threshold (cannot-pass), or a completed-but-below-threshold score (did-not-pass). |
 
-`complete_failed` at section/taskbook level may result from autofail
+`complete_failed` at section/taskbook level may result from critical
 propagation, scoring threshold failure, or evaluation failure — not
 exclusively from evaluation outcome.
 
@@ -332,7 +332,7 @@ Derived severity of a recorded inspection observation. See
 | `pass` | Observation within the passing criteria. |
 | `degraded` | Observation short of passing but within a tolerated band. Behaves as a passing completion for status purposes; worth flagging operationally. |
 | `failing` | Observation failed the criteria. |
-| `critical_failure` | Observation failed criteria marked `critical`. Propagates `complete_failed` to the parent section and book, like evaluation `autofail`. |
+| `critical_failure` | Observation failed its criteria on a task flagged `critical` (`taskbook_task.md` → `critical`). The task's `critical` flag is what propagates `complete_failed` to the parent section and book; the triage records that it did. |
 
 ### `InspectionAction`
 
@@ -498,13 +498,13 @@ application's responsibility to answer "what roles does this user hold
 in which orgs?" at the moment eligibility is evaluated. See
 `signoff_policy.md` for the full matching contract.
 
-What v1.0 does **not** model: the organization's own lifecycle (how it
+What v2.0 does **not** model: the organization's own lifecycle (how it
 is created, governed, dissolved), subunits (stations, shifts, crews),
 or the membership lifecycle (invited, requested, accepted). Richer
 organization modeling is planned for a future version — see Roadmap
 below.
 
-What v1.0 does require of a compliant host: it MUST be able to answer,
+What v2.0 does require of a compliant host: it MUST be able to answer,
 for any user, "what roles does this user hold in which orgs?" —
 represented as `Map<orgId, List<OrgRoles>>` and passed into
 `SignoffPolicy.isEligible`. The role vocabulary is fixed by
@@ -621,7 +621,7 @@ same terms.
 
 ## Conformance
 
-OpenQual v1.0 has a **single conformance level** — no tiers. This
+OpenQual v2.0 has a **single conformance level**, no tiers. This
 section defines what an implementation MUST do, SHOULD do, and MAY
 do to be considered conformant. Vocabulary follows RFC 2119.
 
@@ -747,7 +747,7 @@ For a condensed, copy-pasteable version of these requirements, see
 
 ### What is not prescribed
 
-OpenQual v1.0 does not prescribe:
+OpenQual v2.0 does not prescribe:
 
 - **Wire format.** Implementations choose JSON, CBOR, Protobuf, or
   anything else. The standard specifies field names, types, and
@@ -768,7 +768,7 @@ OpenQual v1.0 does not prescribe:
 ## Roadmap
 
 Planned expansions to the standard in later versions. See "Scope of
-v1.0" above for the full deferred / out-of-scope split.
+v2.0" above for the full deferred / out-of-scope split.
 
 - **Organization lifecycle modeling** — a richer `Organization` class
   layered on top of `OrganizationSnapshot`, the membership lifecycle

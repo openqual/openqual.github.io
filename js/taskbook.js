@@ -24,7 +24,6 @@ const {
   TaskTypes,
   EvaluationType,
   ScoringMode,
-  InspectionTriage,
 } = require('./enums');
 const { SignoffPolicy, signoffsOK } = require('./signoff_policy');
 const { Source } = require('./source');
@@ -325,17 +324,13 @@ class Taskbook {
     const failedPoints =
       isAggregated && hasThreshold && allScoredEvalsDone && pointsAwarded < effThresholdPoints;
 
-    // Autofail propagation: evaluation autofail + inspection
-    // critical_failure (the inspection counterpart — see
-    // schemas/taskbook.md).
-    const hasAutofailFailure = allTasks.some((t) => {
-      if (t.status !== WorkItemStatus.COMPLETE_FAILED) return false;
-      if (t.typeConfig?.evaluationConfig?.criteria?.autofail === true) return true;
-      return (
-        t.typeConfig?.inspectionConfig?.result?.triage ===
-        InspectionTriage.CRITICAL_FAILURE
-      );
-    });
+    // Critical propagation: a failed task flagged `critical` fails the
+    // whole tier, whatever its type (see schemas/taskbook.md). The task-level
+    // flag is the authority; a stored inspection triage is derived from
+    // it and is not consulted here.
+    const hasCriticalFailure = allTasks.some(
+      (t) => t.critical && t.status === WorkItemStatus.COMPLETE_FAILED,
+    );
     const hasFailedSection = computedSections.some(
       (s) => s.status === WorkItemStatus.COMPLETE_FAILED,
     );
@@ -360,7 +355,7 @@ class Taskbook {
     const isComplete = this.completion.complete;
 
     let newStatus = WorkItemStatus.NOT_STARTED;
-    if (hasAutofailFailure) newStatus = WorkItemStatus.COMPLETE_FAILED;
+    if (hasCriticalFailure) newStatus = WorkItemStatus.COMPLETE_FAILED;
     else if (cannotPass) newStatus = WorkItemStatus.COMPLETE_FAILED;
     else if (failedPoints) newStatus = WorkItemStatus.COMPLETE_FAILED;
     else if (isPerSection && hasFailedSection) newStatus = WorkItemStatus.COMPLETE_FAILED;

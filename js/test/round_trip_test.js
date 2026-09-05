@@ -180,12 +180,12 @@ test('Taskbook round-trips (all task types, signoffs, scoring)', () => {
             id: 't2',
             order: 1,
             type: TaskTypes.EVALUATION,
+            critical: true,
             title: 'Timed pump eval',
             typeConfig: new TaskTypeConfig({
               evaluationConfig: new TaskTypeEvaluationConfig({
                 criteria: new TaskTypeEvaluationCriteria({
                   evaluationType: EvaluationType.SCORED,
-                  autofail: true,
                   pointsPossible: 10,
                   timeThreshold: new TimeThreshold({
                     durationMs: 90000,
@@ -204,12 +204,12 @@ test('Taskbook round-trips (all task types, signoffs, scoring)', () => {
             id: 't3',
             order: 2,
             type: TaskTypes.INSPECTION,
+            critical: true,
             title: 'Air-tank PSI',
             typeConfig: new TaskTypeConfig({
               inspectionConfig: new TaskTypeInspectionConfig({
                 criteria: new TaskTypeInspectionCriteria({
                   kind: InspectionKind.MEASUREMENT,
-                  critical: true,
                   unit: 'PSI',
                   passMin: 4500,
                   degradedMin: 4000,
@@ -451,10 +451,10 @@ test('B3: out-of-range min_passing_percentage throws RangeError', () => {
   );
 });
 
-test('schema_version serializes as 1.0.0', () => {
-  assert.equal(new Taskbook({ title: 'B' }).toJSON().schema_version, '1.0.0');
+test('schema_version serializes as 2.0.0', () => {
+  assert.equal(new Taskbook({ title: 'B' }).toJSON().schema_version, '2.0.0');
   assert.equal(
     new TrainingRecord({ title: 'T', holder: person() }).toJSON().schema_version,
-    '1.0.0',
+    '2.0.0',
   );
 });
